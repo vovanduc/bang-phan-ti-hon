@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bảng phấn tí hon — dựng lại sát bản gốc (PixiJS)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2f9ea3; }
+  canvas { display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #hint {
+    position: fixed; top: 14px; left: 18px; z-index: 10; pointer-events: none;
+    color: #f6fffd; font: 16px "Chalkboard SE", "Comic Sans MS", cursive; line-height: 1.5;
+    opacity: .9; transition: opacity 2.5s;
+  }
+  #credit {
+    position: fixed; right: 12px; bottom: 8px; z-index: 10;
+    color: #f6fffd; opacity: .45; font: 12px system-ui, sans-serif; text-decoration: none;
+  }
+  #snd {
+    position: fixed; left: 12px; bottom: 8px; z-index: 10; cursor: pointer;
+    background: none; border: 0; padding: 4px; font-size: 20px; opacity: .6;
+  }
+</style>
+<!-- Classic script, chung global scope — giữ đúng thứ tự: core trước, entity sau, boot() cuối -->
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.js"></script>
+<script src="core.js"></script>
+<script src="people.js"></script>
+<script src="sky.js"></script>
+<script src="ground.js"></script>
+<script src="things.js"></script>
+<script src="sound.js"></script>
+</head>
+<body>
+<div id="hint">✎ kéo để vẽ nét phấn — người tí hon sẽ đi, leo trên nét<br>☝ chạm người tí hon · mây · mặt trời · ngôi sao · bong bóng<br>🔊 tiếng bật từ lần chạm đầu tiên</div>
+<a id="credit" href="https://www.team-lab.com/en/blackboard/" target="_blank" rel="noopener">lấy cảm hứng từ dòng tác phẩm Little People của teamLab</a>
+<button id="snd" title="Bật/tắt tiếng" aria-label="Bật/tắt tiếng" onclick="this.textContent = soundToggle() ? '🔇' : '🔊'">🔊</button>
+<script>boot();</script>
+</body>
+</html>
