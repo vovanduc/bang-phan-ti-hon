@@ -15,11 +15,15 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 | Tap a person | They jump and say "ouch". |
 | Tap a cloud | It rains. Rain grows clover, flowers and berry bushes, and collects in puddles. |
 | Tap the sun | A sunbeam makes people in it spin and glow. Sun and rain together make a rainbow people can walk over. |
+| Press and hold the sun | Night falls: the board turns dark blue, the moon comes out, fireflies glow, crickets chirp, and most people yawn and lie down to sleep. |
+| Tap the moon | Morning comes and everyone wakes up. |
 | Tap a star | It bursts into sparkles and drops seeds. |
 | Tap a bubble | It pops and drops a ladder, mushroom (trampoline), fire, cow, crocodile, monkey, bear, berry or star. |
 | Tap an animal | Crocodile rolls over giggling, monkey does a backflip, bear hugs the nearest person. |
 
 Fire: a person who touches fire catches it. A small fire burns out by itself. A big fire makes them cry for help and run toward the nearest cloud. Tap that cloud to make rain and put them out. Burned people turn black for a few seconds, then go back to normal. A big fire can spread to one person standing next to them.
+
+Day and night also change by themselves: night falls after about 2.5 minutes of play and morning returns about 90 seconds later. Tap a sleeping person to wake them.
 
 Nature: rain runs downhill and pools. On flat ground it makes shallow puddles people splash through; draw a U-shaped line under a cloud and it fills into a pond. Well-watered clover blooms into flowers, butterflies come to rest on them, and people stop to sniff the flowers and sneeze.
 
@@ -44,6 +48,7 @@ The first run needs internet: PixiJS 8.6.6 loads from the jsDelivr CDN.
 | `things.js` | Bubbles, dropped items, birds |
 | `animals.js` | Crocodile, monkey, bear |
 | `nature.js` | Rainbow, puddles, flowers, butterflies |
+| `night.js` | Day and night, moon, fireflies, sleeping |
 | `sound.js` | All sounds, synthesized with Web Audio (no audio files) |
 | `archive/` | Early prototypes v1–v3 |
 | `docs/` | Analysis of the original artwork, specs, build contracts |

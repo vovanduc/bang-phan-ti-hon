@@ -250,6 +250,7 @@ const ANIMALS = {
     update(it, dt) {
       it.modeT -= dt; it.eatCD -= dt;
       if (it.mode === 'sleep') {
+        if (it.modeT > 100 && !night.dark) it.modeT = rand(0.5, 2);    // ngủ đêm: trời sáng thì dậy
         if ((it.zT -= dt) <= 0) { it.zT = 0.9; fx.push({ type: 'zz', x: it.x + it.dir * 26, y: it.y - 30, vy: -28, t: 0, life: 1.6 }); }
         if (it.modeT <= 0) { ani_mode(it, 'walk', 0); sfx('grunt', it.x); }
         ani_ground(it, dt, 40); return;
@@ -279,7 +280,8 @@ const ANIMALS = {
         return;
       }
       if (it.mode === 'hug') { if (it.modeT <= 0) ani_mode(it, 'walk', 0); ani_ground(it, dt, 40); return; }
-      // walk: ưu tiên chạy tới người đang cháy, rồi tới bụi dâu
+      // walk: ưu tiên chạy tới người đang cháy, rồi tới bụi dâu; đêm thì đi ngủ
+      if (!it.air && night.dark && it.mode === 'walk' && !ani_burning(it, 320, 80)) { ani_mode(it, 'sleep', 999); sfx('grunt', it.x); return; }
       if (!it.air) {
         const p = ani_burning(it, 320, 80);
         if (p) {

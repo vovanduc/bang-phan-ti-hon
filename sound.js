@@ -9,7 +9,7 @@ const SND = {
   bgmNext: 0,
 };
 
-const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120, rainbow: 3000, splash: 120, bloom: 150, achoo: 300 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
+const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120, rainbow: 3000, splash: 120, bloom: 150, achoo: 300, dusk: 2000, dawn: 2000, yawn: 500, cricket: 400 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
 let snd_chalkLevel = 0, snd_chalkX = undefined;
 
 // ---------- helpers (chỉ dùng ctx + tham số) ----------
@@ -90,7 +90,7 @@ function snd_voice(ctx, out, t, syllables, gain) {
   return cur - t;
 }
 
-// ---------- 31 công thức sự kiện ----------
+// ---------- 35 công thức sự kiện ----------
 const SFX = {
   pop(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 900, f1: 200, slide: 0.06, dur: 0.09, gain: 0.45 });
@@ -219,6 +219,24 @@ const SFX = {
     const d = snd_voice(ctx, out, t, [{ v: 'a', f: 700, d: 0.14, pitch: p, glide: 1.25 }, { c: 'ch', v: 'u', f: 820, d: 0.1, pitch: p, glide: 0.7 }], 0.25);
     snd_hitNoise(ctx, out, t + 0.14, { dur: 0.15, hp: 2500, gain: 0.08 });
     return Math.max(d, 0.3);
+  },
+  dusk(ctx, out, t, o) {                   // chạng vạng: hợp âm trầm đi xuống, êm
+    [784, 659, 523, 392].forEach((f, i) => snd_tone(ctx, out, t + i * 0.22, { f0: f, dur: 1.6, attack: 0.15, gain: 0.06, verb: o.verb, verbGain: 0.8 }));
+    return 2.4;
+  },
+  dawn(ctx, out, t, o) {                   // bình minh: đi lên + chim hót
+    [523, 659, 784, 1047].forEach((f, i) => snd_tone(ctx, out, t + i * 0.15, { f0: f, type: 'triangle', dur: 1.2, attack: 0.05, gain: 0.07, verb: o.verb, verbGain: 0.6 }));
+    for (let i = 0; i < 3; i++) snd_tone(ctx, out, t + 0.7 + i * 0.12, { f0: 2600, f1: 3900, slide: 0.06, dur: 0.07, gain: 0.04 });
+    return 1.9;
+  },
+  yawn(ctx, out, t, o) {                   // ngáp "a-o" trượt xuống
+    const p = o.pitch || 1;
+    return snd_voice(ctx, out, t, [{ v: 'a', f: 520, d: 0.35, pitch: p, glide: 0.75 }, { v: 'o', f: 390, d: 0.3, pitch: p, glide: 0.8 }], 0.16);
+  },
+  cricket(ctx, out, t) {                   // dế: 2 cụm 3 tiếng rất nhỏ
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 3; i++)
+      snd_tone(ctx, out, t + j * 0.28 + i * 0.045, { f0: 4200, dur: 0.03, type: 'triangle', gain: 0.025 });
+    return 0.6;
   },
   bonk(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 120, f1: 60, slide: 0.12, dur: 0.12, gain: 0.45 });
@@ -384,10 +402,10 @@ function soundUpdate(dt) {
   if (!SND.muted) {
     SND.bgmNext = Math.max(SND.bgmNext, t);            // tab ẩn lâu → bỏ các nốt đã lỡ, không dồn cả loạt phát cùng lúc
     while (SND.bgmNext < t + 0.3) {
-      const idx = (Math.random() * snd_SCALE.length) | 0;
+      const idx = (Math.random() * snd_SCALE.length * (night && night.k > 0.5 ? 0.5 : 1)) | 0;   // đêm: chỉ nửa thang âm thấp
       snd_bgmNote(ctx, SND.bgmNext, idx);
       if (Math.random() < 0.2) snd_bgmNote(ctx, SND.bgmNext + 0.02, idx, pick([3, 5]));
-      SND.bgmNext += rand(0.6, 1.8);
+      SND.bgmNext += rand(0.6, 1.8) * (1 + (night ? night.k : 0));   // đêm: nhạc nền thưa, chậm
     }
   } else SND.bgmNext = Math.max(SND.bgmNext, t);
 }

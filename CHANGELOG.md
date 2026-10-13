@@ -6,6 +6,13 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-14
+
+### Added
+- **Day and night**: night falls by itself after about 2.5 minutes, or when you press and hold the sun for 1 second. Tap the moon (or wait about 90 seconds) for morning.
+- At night the board turns dark blue while chalk stays bright, the sun becomes a crescent moon, stars grow bigger, fireflies blink near the ground, crickets chirp softly and the music box plays slower and lower.
+- People yawn and lie down to sleep (about a quarter stay up and wander). Tap a sleeping person to wake them. The bear sleeps through the night too.
+- Gentle dusk and dawn chimes.
 ## [1.2.0] - 2026-10-13
 
 ### Added
@@ -50,7 +57,8 @@ First release on GitHub Pages: the game known internally as "v4", moved from `co
 - Test hook `window.__bb`.
 - `archive/` prototypes v1–v3, `docs/` specs and build contracts, `knowledge/` project notes.
 
-[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.0.0...v1.1.0

@@ -15,19 +15,20 @@ class Person {
     this.hotT = 0; this.surpriseT = 0; this.rot = 0; this.rotV = 0;
     this.carrier = null; this.rider = null; this.ox = 0;
     this.ladder = null; this.seen = null; this.bumpCD = rand(0, 2);
+    this.sleep = false; this.yawnT = 0;      // đêm: ngáp rồi nằm ngủ (night.js)
     this.burn = 0; this.spreads = 0; this.soot = 0; this.sootT = 0; this.immuneT = 0; this.helpT = 0; this.seekCD = 0;   // cháy: độ cháy 0–1, độ đen 0–1
     this.g = put(new PIXI.Graphics(), peopleLayer);
     this.g.pivot.set(0, -30);                 // xoay quanh giữa thân, chân vẫn ở (x, y)
     this.redrawIn = 0; this.gl = null; this.fgl = null;   // glow tạo lười lúc tắm nắng / lúc cháy
   }
-  get busy() { return this.idleT > 0 || this.eatT > 0 || this.spinT > 0; }
+  get busy() { return this.idleT > 0 || this.eatT > 0 || this.spinT > 0 || this.sleep || this.yawnT > 0; }
 
   detach() {
     if (this.carrier) { this.carrier.rider = null; this.carrier = null; }
     this.ladder = null;
     if (this.eat) { this.eat.taken = null; this.eat = null; this.eatT = 0; }
   }
-  fly(vx, vy) { this.detach(); this.state = 'air'; this.vx = vx; this.vy = vy; this.idleT = 0; }
+  fly(vx, vy) { this.detach(); this.sleep = false; this.yawnT = 0; this.state = 'air'; this.vx = vx; this.vy = vy; this.idleT = 0; }
   mount(q) {
     this.detach();
     this.carrier = q; q.rider = this; this.state = 'ride';
@@ -43,7 +44,7 @@ class Person {
   ignite(p, spreads = 1) {                  // bắt lửa: chỉ mạnh lên, không yếu đi; spreads = số người còn lây được
     if (p <= this.burn) return;
     this.spreads = spreads;
-    if (this.burn <= 0) { this.idleT = this.spinT = 0; this.helpT = 0.25; if (this.eat) { this.eat.taken = null; this.eat = null; this.eatT = 0; } }
+    if (this.burn <= 0) { this.idleT = this.spinT = this.yawnT = 0; this.sleep = false; this.helpT = 0.25; if (this.eat) { this.eat.taken = null; this.eat = null; this.eatT = 0; } }
     this.burn = Math.min(1, p); this.soot = 1; this.sootT = SOOT_HOLD;
   }
   douse() {                                 // mưa dập lửa: xèo + vòng hơi nước
@@ -165,7 +166,7 @@ class Person {
     }
     if (this.bumpCD > 0) return;
     for (const q of people) {
-      if (q === this || q.state !== 'walk') continue;
+      if (q === this || q.state !== 'walk' || q.sleep) continue;
       const ahead = (q.x - this.x) * this.dir;
       if (ahead < 3 || ahead > 12 || Math.abs(q.y - this.y) > 5) continue;
       if (q.dir === this.dir && !q.busy && q.speed >= this.speed) continue;
@@ -215,7 +216,7 @@ class Person {
       }
       for (const q of people) {
         if (this.panic) break;
-        if (q === this || q.rider || q.state === 'air' || q.state === 'climb') continue;
+        if (q === this || q.rider || q.sleep || q.state === 'air' || q.state === 'climb') continue;
         const top = q.y - HEAD_TOP * q.s;
         if (Math.abs(q.x - this.x) < 9 && this.y <= top && top <= this.y + this.vy * dt && towerDepth(q) < MAX_TOWER) {
           this.mount(q); return;
@@ -262,9 +263,9 @@ class Person {
   render(dt) {
     const k = this.state === 'air' ? 1 : Math.min(1, dt * (this.state === 'ride' ? 9 : 20));
     this.rx += (this.x - this.rx) * k; this.ry += (this.y - this.ry) * k;
-    this.g.position.set(this.rx, this.ry - 30 * this.s);
+    this.g.position.set(this.rx, this.ry - 30 * this.s + (this.sleep ? 24 * this.s : 0));   // ngủ: nằm nghiêng sát mặt
     this.g.scale.set(this.s * this.dir * (this.spinT > 0 ? Math.cos(this.spinT * 14) : 1), this.s);
-    this.g.rotation = this.rot;
+    this.g.rotation = this.sleep ? -Math.PI / 2 : this.rot;
     if ((this.redrawIn -= dt) <= 0) { this.redrawIn = rand(0.075, 0.095); drawPerson(this.g, this); }
     if (this.glowT > 0) {
       this.gl = this.gl || glow(0xfff4b8);
@@ -310,7 +311,7 @@ function drawPerson(g, p) {
   const sk = p.soot, ink = sk > 0 ? mixC(CH, 0x2a2a2a, sk) : CH;           // bị cháy: phấn đen dần, mắt vẫn trắng
   const line = w => sk > 0 ? Object.assign(chalk(w), { color: ink }) : chalk(w);
   const hat = sk > 0 ? mixC(p.hat, 0x1c1c1c, sk) : p.hat;
-  const skin = { color: sk > 0 ? mixC(HEADFILL, 0x141414, sk) : HEADFILL, alpha: 0.55 + 0.4 * sk };
+  const skin = { color: sk > 0 ? mixC(HEADFILL, 0x141414, sk) : nightTint(HEADFILL), alpha: 0.55 + 0.4 * sk };
 
   g.moveTo(-1.5, -15).lineTo(lfx + J(), lfy + J());
   g.moveTo(1.5, -15).lineTo(rfx + J(), rfy + J());
@@ -325,8 +326,10 @@ function drawPerson(g, p) {
 
   const hx = J(0.35), hy = -40 + J(0.35);
   g.circle(hx, hy, 11).fill(skin).stroke(line(2.4));
-  g.circle(hx + 5.5, hy - 1.5, 1.5).fill(CH);
-  if (p.surpriseT > 0 || p.eatT > 0) g.circle(hx + 7.2, hy + 5, 1.7).stroke(sk > 0.5 ? chalk(1.3) : line(1.3));
+  if (p.sleep) g.moveTo(hx + 3.5, hy - 1.5).lineTo(hx + 7.5, hy - 1.5).stroke(chalk(1.4));   // mắt nhắm
+  else g.circle(hx + 5.5, hy - 1.5, 1.5).fill(CH);
+  if (p.yawnT > 0) g.ellipse(hx + 7, hy + 5, 2, 3).stroke(chalk(1.3));                    // ngáp
+  else if (p.surpriseT > 0 || p.eatT > 0) g.circle(hx + 7.2, hy + 5, 1.7).stroke(sk > 0.5 ? chalk(1.3) : line(1.3));
   g.poly([hx - 11, hy - 4, hx + 8, hy - 7.5, hx - 8 + J(0.6), hy - 27 + J(0.6)], true);
   g.fill(hat); g.stroke(line(2.2));
   if (p.burn > 0) {                         // ngọn lửa trên mũ + hai bên thân, to theo độ cháy

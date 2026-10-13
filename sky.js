@@ -47,7 +47,7 @@ class Cloud {
       for (const p of this.puffs) g.circle(p[0] + J(0.5), p[1] + J(0.5), p[2]);
       g.stroke(chalk(5, 0.95));
       for (const p of this.puffs) g.circle(p[0], p[1], p[2] - 0.5);
-      g.fill(boardAt(this.y));                         // che cung trong → chỉ còn viền ngoài cụm
+      g.fill(nightTint(boardAt(this.y)));              // che cung trong → chỉ còn viền ngoài cụm
     }
   }
 }
@@ -87,7 +87,7 @@ class Star {
   render(dt) {
     const g = this.g;
     g.position.set(this.x, this.y + Math.sin(this.t * 0.8) * 3);
-    g.scale.set(this.k * (0.9 + 0.12 * Math.sin(this.t * 3)));
+    g.scale.set(this.k * (0.9 + 0.12 * Math.sin(this.t * 3)) * (1 + 0.35 * (night ? night.k : 0)));   // đêm: sao to sáng hơn
     g.rotation = Math.sin(this.t * 0.7) * 0.15;
     this.redrawIn -= dt;
     if (this.redrawIn <= 0) {                          // ~8fps

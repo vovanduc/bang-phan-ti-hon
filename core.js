@@ -2,7 +2,7 @@
  * Dựng lại cơ chế "A Blackboard where Little People Live" của teamLab bằng nét phấn tự vẽ.
  * File này: hằng số, helper, layer Pixi, mặt nạ va chạm + vật lý "đi trên nét vẽ", nét vẽ + input,
  * hạt hiệu ứng dùng chung, vòng lặp tick(), boot(), hook kiểm thử window.__bb.
- * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu) · nature.js (cầu vồng/vũng nước/hoa/bướm).
+ * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu) · nature.js (cầu vồng/vũng nước/hoa/bướm) · night.js (ngày/đêm, đom đóm, đi ngủ).
  * Classic script, chung global scope, nạp theo thứ tự trong index.html.
  */
 
@@ -19,7 +19,7 @@ const G_P = 1100, VT_P = 420;             // trọng lực + vận tốc rơi t�
 const G_I = 1400, VT_I = 900;             // của đồ vật
 const LINE_LIFE = 60, LR = 3, MAX_LINES = 24;   // nét sống 60s rồi mờ; bán kính va chạm 3px (dải 7px)
 const MAX_ITEMS = 10, MAX_SEEDS = 14, MAX_CLOVERS = 160, MAX_STARS = 16, MIN_STARS = 7;
-const MAX_PUDDLES = 10, MAX_BUTTERFLIES = 6;
+const MAX_PUDDLES = 10, MAX_BUTTERFLIES = 6, MAX_FIREFLIES = 14;
 const BEAM = 260;                         // nửa bề rộng vệt nắng ở mặt đất
 const BERRY_AT = [[-13, 0.45], [12, 0.55], [0, 0.75]];   // slot quả dâu: [dx, tỷ lệ chiều cao cây 56px]
 const BURN_BIG = 0.55, SOOT_HOLD = 6;     // cháy ≥ BURN_BIG = cháy to (kêu cứu, chạy tìm mưa, lây); đen giữ 6s sau khi tắt rồi phai 2s
@@ -34,6 +34,7 @@ const boardAt = y => {
   return (c(0) << 16) | (c(1) << 8) | c(2);
 };
 const HEADFILL = boardAt(700);
+const nightTint = c => night && night.k > 0 ? mixC(c, 0x0b1d3a, 0.58 * night.k) : c;   // màu tô theo bảng → tối theo trời đêm
 const mixC = (a, b, t) => {                // trộn màu 0xRRGGBB, t=0 → a, t=1 → b
   const m = sh => Math.round(((a >> sh) & 255) + (((b >> sh) & 255) - ((a >> sh) & 255)) * t);
   return (m(16) << 16) | (m(8) << 8) | m(0);
@@ -42,7 +43,7 @@ const swapRemove = (arr, i) => { arr[i] = arr[arr.length - 1]; arr.pop(); };
 const put = (o, parent = app.stage) => parent.addChild(o);
 
 // ===== Pixi + layer (tạo trong boot) =====
-let app, glowTex, boardS, beamG, rainbowLayer, lineLayer, puddleG, groundG, cloverG, plantLayer, itemLayer, glowLayer, peopleLayer, skyLayer, bubbleLayer, fxG;
+let app, glowTex, boardS, nightLayer, beamG, rainbowLayer, lineLayer, puddleG, groundG, cloverG, plantLayer, itemLayer, glowLayer, peopleLayer, skyLayer, bubbleLayer, fxG;
 function glow(tint) {
   const s = put(new PIXI.Sprite(glowTex), glowLayer);
   s.anchor.set(0.5); s.blendMode = 'add'; s.tint = tint; s.visible = false;
@@ -50,10 +51,10 @@ function glow(tint) {
 }
 
 // ===== State dùng chung =====
-const people = [], items = [], seeds = [], clovers = [], stars = [], clouds = [], bubbles = [], lines = [], birds = [], fx = [], drops = [], puddles = [], butterflies = [];
+const people = [], items = [], seeds = [], clovers = [], stars = [], clouds = [], bubbles = [], lines = [], birds = [], fx = [], drops = [], puddles = [], butterflies = [], fireflies = [];
 const strokes = new Map();                // pointerId → Line đang vẽ
 let WW = 1600, K = 1, MW = 0, mask = new Uint8Array(0), MAXP = 30, MAXB = 3;
-let sun = null, rainbow = null, maskDirty = false, cloverDirty = true, cloverIn = 0, spawnCD = 0, bubbleCD = 1, starCD = 2;
+let sun = null, rainbow = null, night = null, maskDirty = false, cloverDirty = true, cloverIn = 0, spawnCD = 0, bubbleCD = 1, starCD = 2;
 
 // ===== Mặt nạ va chạm: 1 byte / pixel thế giới; nét vẽ được "đóng dấu" vào đây =====
 function solid(x, y) {
@@ -166,12 +167,13 @@ function tapAt(x, y) {
   for (const it of items) if (it.hitW && it.state === 'live' && Math.abs(it.x - x) < it.hitW && y > it.y - it.hitH && y < it.y + 8) { it.tap(); return true; }
   for (const p of people) if (Math.abs(p.rx - x) < 16 * p.s && y > p.ry - 64 * p.s && y < p.ry + 6) { p.poke(); return true; }
   for (const c of clouds) if (Math.abs(c.x - x) < c.w / 2 + 8 && Math.abs(c.y - y) < c.h / 2 + 8) { c.tap(); return true; }
-  if (Math.hypot(sun.x - x, sun.y - y) < sun.r + 24) { sun.shine(); return true; }
+  if (Math.hypot(sun.x - x, sun.y - y) < sun.r + 24) { night.tap(); return true; }   // ngày: sáng rực; đêm: chạm trăng → trời sáng
   return false;
 }
 function onDown(e) {
   soundUnlock();                                        // trình duyệt chỉ cho phát tiếng sau cử chỉ người dùng
   const [x, y] = toWorld(e);
+  if (Math.hypot(sun.x - x, sun.y - y) < sun.r + 24) night.hold(e.pointerId);   // bấm giữ mặt trời 1s → đêm
   if (tapAt(x, y)) return;
   if (lines.length >= MAX_LINES) { const old = lines.find(l => !l.drawing && !l.fading); if (old) old.age = LINE_LIFE; }
   const l = new Line(x, y);
@@ -189,6 +191,7 @@ function onMove(e) {
   }
 }
 function onUp(e) {
+  night.release(e.pointerId);
   const l = strokes.get(e.pointerId);
   if (!l) return;
   strokes.delete(e.pointerId); l.drawing = false;
@@ -303,6 +306,7 @@ function tick(dt) {
   }
   if (maskDirty) { maskDirty = false; rebuildMask(); }
   sun.update(dt);
+  night.update(dt);
   for (const c of clouds) c.update(dt);
   updateRain(dt);
   rainbow.update(dt);
@@ -329,6 +333,7 @@ function tick(dt) {
   updateFx(dt);
   // vẽ: transform mỗi frame; mỗi entity tự dựng lại nét ~12fps trong render()
   sun.render(dt);
+  night.render(dt);
   rainbow.render(dt);
   drawPuddles();
   for (const c of clouds) c.render(dt);
@@ -349,6 +354,7 @@ async function boot() {
   await app.init({ resizeTo: window, background: 0x2f9ea3, antialias: true, resolution: Math.min(2, window.devicePixelRatio || 1), autoDensity: true });
   document.body.appendChild(app.canvas);
   boardS = put(new PIXI.Sprite());
+  nightLayer = put(new PIXI.Container());
   beamG = put(new PIXI.Graphics());
   rainbowLayer = put(new PIXI.Container());
   lineLayer = put(new PIXI.Container());
@@ -371,6 +377,7 @@ async function boot() {
   layout();
   sun = makeSun();
   rainbow = makeRainbow();
+  night = makeNight();
   // cảnh mở đầu như bản gốc lúc chưa ai chạm: người đi trên nét đất, vài ụ hạt, cỏ, mây, sao, bong bóng, đàn chim
   for (let i = 0; i < 3; i++) clouds.push(new Cloud(WW * (0.18 + i * 0.3) + rand(-60, 60), rand(85, 185)));
   for (let i = 0; i < 9; i++) stars.push(new Star(...skySpot()));
@@ -390,8 +397,9 @@ async function boot() {
 
 // Hook kiểm thử: tab ẩn → rAF dừng, phải bơm tick tay (gotcha demo 2026-07-27)
 window.__bb = {
-  people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops, puddles, butterflies, GY,
+  people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops, puddles, butterflies, fireflies, GY,
   get rainbow() { return rainbow; },
+  get night() { return night; },
   get sun() { return sun; },
   get WW() { return WW; },
   step(n = 1) { for (let i = 0; i < n; i++) tick(1 / 60); app.render(); },

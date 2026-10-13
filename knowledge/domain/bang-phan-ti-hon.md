@@ -111,6 +111,13 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 - **Ngửi hoa → hắt xì**: người đi bộ ngang hoa (|dx| ≤ 2) có 35% dừng 1,4s ngửi rồi hắt xì (`achoo`, nhảy lùi nhẹ); bướm trong 40px giật mình bay đi. Mỗi người 8–14s mới ngửi lại.
 - Hiệu năng (Chromium trong app, 2026-10-13, cả 3 mây mưa + cầu vồng + 8 vũng + 6 bướm): tick+render+`gl.finish` TB 4,57ms, p95 10ms, tệ nhất 14,2ms / 180 frame. Chưa so với bản cũ trên cùng máy.
 
+## Ngày và đêm (thêm 2026-10-14, v1.3.0) — `night.js`
+- **Vào đêm**: tự động sau 150s ban ngày, hoặc **bấm giữ mặt trời 1s** (`onDown` gọi `night.hold`, nhả tay `release`; chạm nhanh vẫn là `sun.shine`). Chạng vạng 6s (`night.k` 0→1), tắt nắng, tiếng `dusk`.
+- **Ban đêm**: lớp phủ xanh đêm `0x0b1d3a` alpha 0,58·k ngay trên mặt bảng (dưới nét phấn → nét vẫn sáng); màu tô theo bảng (lõi mây, đầu người) đi qua `nightTint`. Mặt trời mờ đi, trăng lưỡi liềm hiện cùng chỗ. Sao to hơn 35%. Đom đóm (tối đa `MAX_FIREFLIES = 14`, glow vàng xanh nhấp nháy, bay thấp y 380–GY). Dế kêu mỗi 1,2–3,5s (`cricket`, rất nhỏ). Nhạc nền thưa gấp đôi, chỉ dùng nửa thang âm thấp. Không có cầu vồng (mặt trời tắt).
+- **Đi ngủ** (khi `k > 0.8`): mỗi người đi bộ, không bận, không cháy có 25%/đêm là "cú đêm" thức đi dạo; còn lại mỗi giây 25% cơ hội ngáp 1,3s (`yawn`, miệng mở) rồi nằm nghiêng ngủ (mắt nhắm, chữ z bay lên). Đo: sau 12s đêm 17/25 người ngủ, 6 cú đêm. Người ngủ không bị trèo đầu, không bị đáp lên. **Chạm người ngủ → dậy** (nhảy như bị chạm). Bị cháy/bò húc/rơi → dậy.
+- **Gấu** đi ngủ khi trời tối (nếu không có người cháy gần), dậy khi trời sáng.
+- **Sáng lại**: chạm mặt trăng, hoặc tự động sau 90s đêm. Bình minh 6s, tiếng `dawn` (hợp âm + chim hót); người ngủ lần lượt dậy (~1,2/s mỗi người), đom đóm tắt.
+
 ## Chim
 - Đàn **7 chim** giấy (4 hồng `0xffa6d2`, 3 trắng) bám quanh tâm đàn `flock` (điểm đến ngẫu nhiên, tốc 95 px/s; mỗi chim lắc sin quanh chỗ mình trong đàn, tốc tối đa 150).
 - Lần đầu sau 6–10s, các lần sau 8–15s (không có nét phù hợp thì thử lại sau 3s): chọn **1 nét đã vẽ xong** (`!drawing`, `!fading`, ≥ 8 điểm, tuổi < 52s) → cả đàn đáp dàn trải ±7 điểm quanh một điểm ngẫu nhiên của nét.
@@ -146,6 +153,9 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Lội vũng / cá sấu xuống nước | `splash` |
 | Hoa nở | `bloom` |
 | Người hắt xì | `achoo` |
+| Chạng vạng / bình minh | `dusk` / `dawn` |
+| Người ngáp đi ngủ | `yawn` |
+| Dế ban đêm | `cricket` |
 | Bò húc | `bonk` | 
 | Bò kêu | `moo` |
 | Đồ chạm đất | `land` (thang: 2 tiếng "cạch") |
@@ -223,7 +233,7 @@ Video gốc đã xem theo khung hình (kênh teamLab trên YouTube): [McDonald's
 | Chạm người/mây/mặt trời; mưa → cỏ ba lá; mưa lên hạt → cây dâu; tắm nắng xoay + sáng | ✅ đủ |
 | Bong bóng → thang, lửa, nấm, bò (video thêm sao, dâu) | ✅ đủ 6 loại |
 | Chuỗi sao → hạt → dâu → người ăn | ✅ |
-| Âm thanh (ghi công Sound: teamLab; イテテ！/ あちち) | ✅ tổng hợp Web Audio: 31 tiếng sự kiện + mưa/lửa/phấn liên tục + hộp nhạc nền; giọng "i-te-te" / "a-chi-chi" (trang JP không nói rõ là giọng hay chữ — v4 chọn giọng) |
+| Âm thanh (ghi công Sound: teamLab; イテテ！/ あちち) | ✅ tổng hợp Web Audio: 35 tiếng sự kiện + mưa/lửa/phấn liên tục + hộp nhạc nền; giọng "i-te-te" / "a-chi-chi" (trang JP không nói rõ là giọng hay chữ — v4 chọn giọng) |
 | **Chưa có** | |
 | Người **trượt** dốc (「すべったり」) | ❌ |
 | Nét nhiều màu "năng lực" (bản "A Canvas where Little People Live") | ❌ |
