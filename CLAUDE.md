@@ -1,4 +1,4 @@
-# CLAUDE.md — Bảng phấn tí hon (repo: chalk-little-people)
+# CLAUDE.md — Bảng phấn tí hon (repo: tiny-chalk-people)
 
 Game web PixiJS cho trẻ 3 tuổi. Root repo = bản chạy trên GitHub Pages; push `main` là deploy.
 

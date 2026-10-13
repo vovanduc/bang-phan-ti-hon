@@ -1,8 +1,8 @@
-# Chalk Little People
+# Tiny Chalk People
 
 A chalkboard toy for small children (play-tested with a 3-year-old). Draw chalk lines with a finger or mouse; tiny chalk people walk on them, climb, stack into towers and react to what you add to the board.
 
-**Play:** https://vovanduc.github.io/chalk-little-people/
+**Play:** https://vovanduc.github.io/tiny-chalk-people/
 
 Inspired by teamLab's *A Blackboard where Little People Live*. Only the **mechanics** are re-created; all drawings and sounds are made from scratch in code (see [ADR-0004](knowledge/decisions/0004-bang-phan-v4-tai-tao-co-che.md)).
 

@@ -14,7 +14,7 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 - Burning people add to the fire crackle sound.
 
 ### Changed
-- Repository renamed `bang-phan-ti-hon` → `chalk-little-people`. New play URL: https://vovanduc.github.io/chalk-little-people/. The old Pages URL no longer works.
+- Repository renamed `bang-phan-ti-hon` → `tiny-chalk-people`. New play URL: https://vovanduc.github.io/tiny-chalk-people/. The old Pages URL no longer works.
 - README and CHANGELOG rewritten in English.
 
 ## [1.0.0] - 2026-10-13
@@ -29,5 +29,5 @@ First release on GitHub Pages: the game known internally as "v4", moved from `co
 - Test hook `window.__bb`.
 - `archive/` prototypes v1–v3, `docs/` specs and build contracts, `knowledge/` project notes.
 
-[Unreleased]: https://github.com/vovanduc/chalk-little-people/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/vovanduc/chalk-little-people/releases/tag/v1.0.0
+[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.0.0
