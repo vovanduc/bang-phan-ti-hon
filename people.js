@@ -69,11 +69,16 @@ class Person {
       }
     }
   }
-  seekWater() {                             // hướng về mây đang mưa gần nhất; không có thì mây gần nhất
+  seekWater() {                             // hướng về mây đang mưa / cá sấu gần nhất; không có thì mây gần nhất
     let best = null, bd = 1e9;
     for (const c of clouds) {
       const d = Math.abs(c.x - this.x) - (c.rain > 0 ? 1e5 : 0);
       if (d < bd) { bd = d; best = c; }
+    }
+    for (const it of items) {
+      if (it.type !== 'croc' || it.state !== 'live') continue;
+      const d = Math.abs(it.x - this.x) - 1e5;
+      if (d < bd) { bd = d; best = it; }
     }
     if (best && Math.abs(best.x - this.x) > 16) this.dir = Math.sign(best.x - this.x);
   }
@@ -139,6 +144,13 @@ class Person {
         it.squash = 1; sfx('boing', this.x); this.fly(this.dir * rand(40, 160), -rand(1050, 1250)); return;
       }
       if (it.type === 'berry' && Math.abs(it.x - this.x) < 8 && !it.taken) { this.startEat(it); return; }
+      if (it.type === 'bear' && it.mode === 'sleep' && Math.abs(it.x - this.x) < 26) {      // bụng gấu ngủ = bàn nhún
+        it.squash = 1; sfx('boing', this.x); this.fly(this.dir * rand(40, 140), -rand(800, 950)); return;
+      }
+      if (it.seatY && !it.rider && !it.air && it.mode === 'walk' && this.bumpCD <= 0 && Math.abs(it.x - this.x) < 10) {
+        this.bumpCD = 2.5;                    // trèo lên lưng cá sấu / đầu gấu
+        if (Math.random() < 0.7) { this.mount(it); return; }
+      }
     }
     for (const s of seeds) {
       if (s.stage !== 4 || Math.abs(s.y - this.y) > 10 || Math.abs(s.x - this.x) >= 2 || this.seen === s) continue;
@@ -164,12 +176,13 @@ class Person {
 
   ride(dt) {
     const c = this.carrier;
-    if (!c || c.state === 'air' || c.state === 'climb') { this.fly(this.dir * 40, -60); return; }  // tháp đổ
+    if (!c || c.state === 'air' || c.state === 'climb' || c.dead                                        // tháp đổ
+        || (c.seatY && (c.state !== 'live' || c.air || !['walk', 'spray', 'snap', 'eat', 'hug'].includes(c.mode)))) { this.fly(this.dir * 40, -60); return; }  // thú chở người: lật/ngủ/nhảy thì rơi
     if (this.panic) { this.fly(this.dir * rand(60, 100), -rand(140, 200)); return; }               // cháy to: nhảy xuống chạy tìm mưa
     if (this.idleT > 0) this.idleT -= dt;
     else if (!this.busy) this.ox += this.dir * this.speed * 0.4 * dt;
-    this.x = c.x + this.ox; this.y = c.y - HEAD_TOP * c.s;
-    if (Math.abs(this.ox) > 11 * c.s) this.fly(this.dir * rand(50, 90), -rand(140, 220));
+    this.x = c.x + this.ox; this.y = c.y - (c.seatY || HEAD_TOP * c.s);
+    if (Math.abs(this.ox) > (c.seatW || 11 * c.s)) this.fly(this.dir * rand(50, 90), -rand(140, 220));
   }
 
   climb(dt) {

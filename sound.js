@@ -9,7 +9,7 @@ const SND = {
   bgmNext: 0,
 };
 
-const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
+const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
 let snd_chalkLevel = 0, snd_chalkX = undefined;
 
 // ---------- helpers (chỉ dùng ctx + tham số) ----------
@@ -90,7 +90,7 @@ function snd_voice(ctx, out, t, syllables, gain) {
   return cur - t;
 }
 
-// ---------- 21 công thức sự kiện ----------
+// ---------- 27 công thức sự kiện ----------
 const SFX = {
   pop(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 900, f1: 200, slide: 0.06, dur: 0.09, gain: 0.45 });
@@ -166,6 +166,38 @@ const SFX = {
   hiss(ctx, out, t) {                       // mưa dập lửa: xèo nhẹ
     snd_hitNoise(ctx, out, t, { dur: 0.6, hp: 2500, lp: 7000, gain: 0.07 });
     return 0.6;
+  },
+  chomp(ctx, out, t) {                      // cá sấu đớp hụt: 2 tiếng gỗ "cạch cạch"
+    for (let i = 0; i < 2; i++) {
+      snd_tone(ctx, out, t + i * 0.16, { f0: 320, f1: 140, slide: 0.05, dur: 0.06, type: 'triangle', gain: 0.22 });
+      snd_hitNoise(ctx, out, t + i * 0.16, { dur: 0.03, bp: [1400, 3], gain: 0.12 });
+    }
+    return 0.25;
+  },
+  spray(ctx, out, t) {                      // vòi nước
+    const s = ctx.createBufferSource(); s.buffer = ctx.__sndNoise || (ctx.__sndNoise = snd_noiseBuf(ctx));
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.2;
+    bp.frequency.setValueAtTime(900, t); bp.frequency.exponentialRampToValueAtTime(2200, t + 0.7);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.12, t + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+    s.connect(bp); bp.connect(g); g.connect(out); s.start(t); s.stop(t + 0.85);
+    return 0.8;
+  },
+  giggle(ctx, out, t) {                     // cá sấu lật ngửa cười "hê hê hê"
+    const syl = [];
+    for (let i = 0; i < 5; i++) syl.push({ c: 'ch', v: 'e', f: 620 + (i % 2) * 90, d: 0.1, glide: 0.75 });
+    return snd_voice(ctx, out, t, syl, 0.2);
+  },
+  ook(ctx, out, t) {                        // khỉ "u-a"
+    return snd_voice(ctx, out, t, [{ v: 'u', f: 520, d: 0.11, glide: 1.4 }, { v: 'a', f: 760, d: 0.13, glide: 1.25 }], 0.3);
+  },
+  grunt(ctx, out, t) {                      // gấu "hừm" trầm, nhẹ
+    return snd_voice(ctx, out, t, [{ v: 'o', f: 170, d: 0.35, glide: 0.85 }], 0.4);
+  },
+  thud(ctx, out, t) {                       // gấu dậm chân
+    snd_tone(ctx, out, t, { f0: 110, f1: 50, slide: 0.15, dur: 0.18, gain: 0.35 });
+    snd_hitNoise(ctx, out, t, { dur: 0.12, lp: 500, gain: 0.15 });
+    return 0.2;
   },
   bonk(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 120, f1: 60, slide: 0.12, dur: 0.12, gain: 0.45 });

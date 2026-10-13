@@ -2,7 +2,7 @@
  * Dựng lại cơ chế "A Blackboard where Little People Live" của teamLab bằng nét phấn tự vẽ.
  * File này: hằng số, helper, layer Pixi, mặt nạ va chạm + vật lý "đi trên nét vẽ", nét vẽ + input,
  * hạt hiệu ứng dùng chung, vòng lặp tick(), boot(), hook kiểm thử window.__bb.
- * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim).
+ * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu).
  * Classic script, chung global scope, nạp theo thứ tự trong index.html.
  */
 
@@ -161,6 +161,8 @@ function toWorld(e) { const r = app.canvas.getBoundingClientRect(); return [(e.c
 function tapAt(x, y) {
   for (const b of bubbles) if (!b.dead && Math.hypot(b.x - x, b.y - y) < b.r + 10) { b.pop(); return true; }
   for (const s of stars) if (Math.hypot(s.x - x, s.y - y) < 26) { burst(s.x, s.y, s.color, s); return true; }
+  // thú (thân to) trước người: bé chạm cá sấu/khỉ/gấu thì trúng thú dù có người đi ngang
+  for (const it of items) if (it.hitW && it.state === 'live' && Math.abs(it.x - x) < it.hitW && y > it.y - it.hitH && y < it.y + 8) { it.tap(); return true; }
   for (const p of people) if (Math.abs(p.rx - x) < 16 * p.s && y > p.ry - 64 * p.s && y < p.ry + 6) { p.poke(); return true; }
   for (const c of clouds) if (Math.abs(c.x - x) < c.w / 2 + 8 && Math.abs(c.y - y) < c.h / 2 + 8) { c.tap(); return true; }
   if (Math.hypot(sun.x - x, sun.y - y) < sun.r + 24) { sun.shine(); return true; }
@@ -254,7 +256,7 @@ function updateFx(dt) {
       f.sprite.visible = true; f.sprite.position.set(f.x, f.y);
       f.sprite.scale.set(0.6 + f.t * 3); f.sprite.alpha = Math.max(0, 1 - f.t / f.life);
     } else if (f.type === 'drop') { f.vy += 300 * dt; f.x += f.vx * dt; f.y += f.vy * dt; }
-    else if (f.type === 'heart' || f.type === 'ember') { if (f.t > 0) f.y += f.vy * dt; }
+    else if (f.type === 'heart' || f.type === 'ember' || f.type === 'zz') { if (f.t > 0) f.y += f.vy * dt; }
     if (f.dead || (f.life && f.t > f.life)) { if (f.sprite) f.sprite.destroy(); swapRemove(fx, i); }
   }
 }
@@ -281,6 +283,10 @@ function drawFx() {
     else if (f.type === 'drop') g.circle(f.x, f.y, 2.2).fill({ color: CH, alpha: a });
     else if (f.type === 'heart') heartShape(g, f.x, f.y, 1.2, a);
     else if (f.type === 'ember') g.circle(f.x, f.y, 2).fill({ color: 0xffb347, alpha: a });
+    else if (f.type === 'zz') {                          // gấu ngủ: chữ z bay lên, lắc nhẹ
+      const s = 4 + f.t * 3, x = f.x + Math.sin(f.t * 3) * 5;
+      g.moveTo(x - s, f.y - s).lineTo(x + s, f.y - s).lineTo(x - s, f.y + s).lineTo(x + s, f.y + s).stroke({ width: 1.8, color: CH, alpha: a });
+    }
   }
 }
 

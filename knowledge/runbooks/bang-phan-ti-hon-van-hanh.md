@@ -18,7 +18,7 @@ Thư mục: root repo (`index.html` + `*.js`). Cơ chế chi tiết: [knowledge/
 
 ## 2. Kiến trúc
 Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong index.html:
-`pixi.min.js (CDN) → core.js → people.js → sky.js → ground.js → things.js → sound.js → <script>boot()</script>`.
+`pixi.min.js (CDN) → core.js → people.js → sky.js → ground.js → things.js → animals.js → sound.js → <script>boot()</script>`.
 
 | File | Sở hữu |
 |---|---|
@@ -28,11 +28,12 @@ Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong ind
 | `sky.js` | `Cloud`, `updateRain`, `Star`, `burst`, `makeSun` |
 | `ground.js` | `GROW`, `LEAVES`, `waterAt`, `ageClovers`, `drawClovers`, `Seed`, `drawPlant`, `leaf`, `drawBerry` |
 | `things.js` | `ITEM_TYPES`, `LIFE`, `ICON`, `Item`, `drawItem`, `trimItems`, `Bubble`, `flock`, `Bird`, `updateFlock`, `drawBird` |
+| `animals.js` | `ANIMALS` (croc/monkey/bear: `init/update/draw/tap`), helper `ani_*` |
 | `sound.js` | `SND`, `SFX`, `sfx`, `soundUnlock`, `soundUpdate`, `soundToggle` (+ helper `snd_*`) — tiếng tổng hợp; core gọi `soundUnlock()` ở pointerdown và `soundUpdate(dt)` cuối `tick()`; các slice gọi `sfx(name, x)` tại sự kiện |
 
 Luật: file entity chỉ **khai báo** (không chạy gì lúc nạp, không đụng `PIXI.*`/layer ở top-level); top-level chỉ đúng các tên liệt kê (helper khác → `static` hoặc prefix `<slice>_`); trùng `const/let/class` giữa file = SyntaxError cả trang.
 
-Hợp đồng field giữa slice (người khác đọc/ghi): `Person.{x,y,state,rider,carrier,busy,eat,poke(),burn,soot,panic,ignite(p,spreads)}`, `Item.{type,x,y,state,k,squash,h,dir,air,taken,dead}`, `Seed.{x,y,stage,berries,rain()}`, `Star.{x,y,r,color,k}`, `Cloud.{x,y,w,h,rain,tap()}`, `sun.{x,y,r,on,id,shine(),lit(),update(),render()}`, hàm `burst`, `waterAt`, `trimItems`.
+Hợp đồng field giữa slice (người khác đọc/ghi): `Person.{x,y,state,rider,carrier,busy,eat,poke(),burn,soot,panic,ignite(p,spreads)}`, `Item.{type,x,y,state,k,squash,h,dir,air,taken,dead}` (+ thú: `mode,modeT,rider,seatY,seatW,hitW,hitH,midY,tap()`), `Seed.{x,y,stage,berries,rain()}`, `Star.{x,y,r,color,k}`, `Cloud.{x,y,w,h,rain,tap()}`, `sun.{x,y,r,on,id,shine(),lit(),update(),render()}`, hàm `burst`, `waterAt`, `trimItems`.
 
 ## 3. Kiểm thử
 Hook `window.__bb` (core.js): mảng `people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops` + `sun`, `WW`, `GY`; hàm `step(n)` (bơm n tick, **60 bước = 1 giây**, mỗi step render), `tap(x,y)` (= `tapAt`), `draw(pts)` (pts = [x0,y0,x1,y1,…]), `drop(type,x,y=300)`.
@@ -63,6 +64,7 @@ Lưu ý test tự động: chọn điểm `tap` **không chồng vật khác** �
 
 ## 4. Mở rộng
 - **Thêm loại đồ vật**: `ITEM_TYPES` (trọng số), `LIFE`, `ICON`, nhánh trong `drawItem`, phản ứng của người trong `Person.look()`/`touch()` — nếu cần; không cần sửa core.
+- **Thêm con thú**: thêm khóa trong `ANIMALS` (animals.js) với `init` (đặt `midY, hitW, hitH`; `seatY/seatW` nếu chở người), `update`, `draw`, `tap` + dòng trong `ITEM_TYPES/LIFE/ICON`. Item/tapAt/ride tự nhận.
 - **Thêm hành vi người**: state mới trong `Person.update` switch + nhánh `drawPerson`; field chia sẻ phải cập nhật bảng hợp đồng.
 - **Thêm tiếng**: thêm `SFX.<name>` trong sound.js + dòng `snd_THROTTLE` + gọi `sfx('<name>', x)` tại sự kiện; gọi trước khi mở khóa vẫn an toàn (no-op).
 
