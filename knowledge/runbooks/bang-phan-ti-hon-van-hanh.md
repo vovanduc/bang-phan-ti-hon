@@ -14,7 +14,7 @@ Thư mục: root repo (`index.html` + `*.js`). Cơ chế chi tiết: [knowledge/
 - Hoặc tự chạy server: `python3 -m http.server 8765` ở root repo → mở `http://127.0.0.1:8765/`.
 - Cần mạng lần đầu: PixiJS 8.6.6 tải từ CDN jsdelivr.
 - ⚠️ Link localhost do **agent** bật sẽ chết khi agent tắt server/thoát — đưa user kèm cả hai cách trên (xem [gotcha](../gotchas/demo-web-agent.md)).
-- **Bản công khai:** https://vovanduc.github.io/tiny-chalk-people/ — GitHub Pages build từ `main` / của chính repo này (repo đổi tên từ `bang-phan-ti-hon` 2026-10-13; link Pages cũ đã chết). Cập nhật: commit → push `main`; Pages tự build (~30 s, kiểm bằng `gh api repos/vovanduc/tiny-chalk-people/pages --jq .status` = `built`). `archive/` cũng được serve (vd `/archive/v2-teamlab-pixi.html`).
+- **Bản công khai:** https://vovanduc.github.io/tiny-chalk-people/ — GitHub Pages build từ `main` / của chính repo này (repo đổi tên từ `bang-phan-ti-hon` 2026-10-13; link Pages cũ đã chết). Cập nhật: commit → push `main`; Pages tự build (~30 s, kiểm bằng `gh api repos/vovanduc/tiny-chalk-people/pages --jq .status` = `built`). `archive/` cũng được serve (vd `/archive/v2-teamlab-pixi.html`). **Mỗi lần phát hành đổi `?v=` trên mọi `<script>` trong index.html**: Pages cache 10 phút (`max-age=600`), không đổi thì trình duyệt ghép file mới với file cũ → `ReferenceError` trong `tick` → game đứng (thấy thật 2026-10-13: Pages trả things.js mới, trình duyệt vẫn chạy bản cũ).
 
 ## 2. Kiến trúc
 Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong index.html:

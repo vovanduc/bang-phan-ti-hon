@@ -6,6 +6,11 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-13
+
+### Fixed
+- Scripts are loaded as `file.js?v=<version>` so a browser never mixes freshly deployed files with old cached ones (GitHub Pages caches for 10 minutes). A mix could freeze the game right after a deploy.
+
 ## [1.1.0] - 2026-10-13
 
 ### Added
@@ -36,6 +41,7 @@ First release on GitHub Pages: the game known internally as "v4", moved from `co
 - Test hook `window.__bb`.
 - `archive/` prototypes v1–v3, `docs/` specs and build contracts, `knowledge/` project notes.
 
-[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.0.0

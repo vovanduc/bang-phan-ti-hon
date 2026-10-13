@@ -62,8 +62,9 @@ Versions follow [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
 - MAJOR (`2.0.0`): changes that break or replace how the game plays.
 
 To release:
-1. Move the entries under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) to a new version heading, then commit.
-2. Tag and publish:
+1. Move the entries under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) to a new version heading.
+2. Bump `?v=` on every `<script>` in `index.html` to the new version (GitHub Pages caches files for 10 minutes; without this a browser can mix new and old files and freeze). Commit.
+3. Tag and publish:
    ```bash
    git tag -a v1.1.0 -m "v1.1.0"
    git push origin main v1.1.0
