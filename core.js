@@ -21,6 +21,7 @@ const LINE_LIFE = 60, LR = 3, MAX_LINES = 24;   // nét sống 60s rồi mờ; b
 const MAX_ITEMS = 10, MAX_SEEDS = 14, MAX_CLOVERS = 160, MAX_STARS = 16, MIN_STARS = 7;
 const BEAM = 260;                         // nửa bề rộng vệt nắng ở mặt đất
 const BERRY_AT = [[-13, 0.45], [12, 0.55], [0, 0.75]];   // slot quả dâu: [dx, tỷ lệ chiều cao cây 56px]
+const BURN_BIG = 0.55, SOOT_HOLD = 6;     // cháy ≥ BURN_BIG = cháy to (kêu cứu, chạy tìm mưa, lây); đen giữ 6s sau khi tắt rồi phai 2s
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[(Math.random() * a.length) | 0];
@@ -32,6 +33,10 @@ const boardAt = y => {
   return (c(0) << 16) | (c(1) << 8) | c(2);
 };
 const HEADFILL = boardAt(700);
+const mixC = (a, b, t) => {                // trộn màu 0xRRGGBB, t=0 → a, t=1 → b
+  const m = sh => Math.round(((a >> sh) & 255) + (((b >> sh) & 255) - ((a >> sh) & 255)) * t);
+  return (m(16) << 16) | (m(8) << 8) | m(0);
+};
 const swapRemove = (arr, i) => { arr[i] = arr[arr.length - 1]; arr.pop(); };
 const put = (o, parent = app.stage) => parent.addChild(o);
 

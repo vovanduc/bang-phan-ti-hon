@@ -1,23 +1,33 @@
 # Changelog
 
-Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số theo [Semantic Versioning](https://semver.org/lang/vi/):
-`MAJOR.MINOR.PATCH` — PATCH = sửa lỗi/chỉnh nhỏ (1.0.1), MINOR = thêm cơ chế/tính năng không phá cái cũ (1.1.0), MAJOR = đổi lớn/phá cách chơi cũ (2.0.0).
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [Semantic Versioning](https://semver.org/).
 
-Tên v1–v3 trong `archive/` và "v4" trong docs là tên prototype nội bộ, không phải số phiên bản phát hành.
+The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names, not release versions.
 
 ## [Unreleased]
 
+### Added
+- Burning: a person who touches fire catches it (random strength). A small fire burns out by itself in a few seconds. A big fire makes the person cry for help ("cứu! cứu!"), drop off any tower and run toward the nearest cloud, raining clouds first.
+- A big fire spreads to at most one person standing next to the burner or in the same tower. A person who caught fire this way does not pass it on.
+- Rain puts a burning person out immediately, with a soft hiss and steam rings.
+- Burned people turn black (eyes stay white) and fade back to normal 6 s after the fire is out.
+- Burning people add to the fire crackle sound.
+
+### Changed
+- Repository renamed `bang-phan-ti-hon` → `chalk-little-people`. New play URL: https://vovanduc.github.io/chalk-little-people/. The old Pages URL no longer works.
+- README and CHANGELOG rewritten in English.
+
 ## [1.0.0] - 2026-10-13
 
-Bản phát hành đầu tiên trên GitHub Pages (game "v4" chuyển từ `community-builder@a3089da`).
+First release on GitHub Pages: the game known internally as "v4", moved from `community-builder@a3089da`.
 
 ### Added
-- Bảng phấn PixiJS 8.6.6: bé vẽ nét phấn, người tí hon đi/leo/rơi theo nét vẽ.
-- Người tí hon tự đi, ngó nghiêng, quay đầu, trèo lên đầu nhau thành tháp (tối đa 5 tầng).
-- Sao, mây & mưa, cây dâu (người ăn dâu, bay tim), mặt trời (xoay + phát sáng), bong bóng thả đồ vật (thang, nấm, lửa, bò, dâu, sao), chim.
-- Âm thanh tổng hợp bằng Web Audio (không file âm thanh), không tiếng giật mình.
-- Hook kiểm thử `window.__bb`.
-- `archive/` prototype v1–v3, `docs/` spec + hợp đồng build, `knowledge/` tri thức dự án.
+- PixiJS 8.6.6 chalkboard: draw chalk lines; little people walk, climb and fall along them.
+- People walk, pause to look around, turn back at walls, and climb on each other into towers up to 5 high.
+- Stars, clouds and rain, berry bushes (people eat berries, hearts float up), sun (spin and glow), bubbles that drop items (ladder, mushroom, fire, cow, berry, star), birds.
+- Sounds synthesized with Web Audio (no audio files), with nothing loud or startling.
+- Test hook `window.__bb`.
+- `archive/` prototypes v1–v3, `docs/` specs and build contracts, `knowledge/` project notes.
 
-[Unreleased]: https://github.com/vovanduc/bang-phan-ti-hon/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/vovanduc/bang-phan-ti-hon/releases/tag/v1.0.0
+[Unreleased]: https://github.com/vovanduc/chalk-little-people/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/vovanduc/chalk-little-people/releases/tag/v1.0.0

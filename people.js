@@ -15,9 +15,10 @@ class Person {
     this.hotT = 0; this.surpriseT = 0; this.rot = 0; this.rotV = 0;
     this.carrier = null; this.rider = null; this.ox = 0;
     this.ladder = null; this.seen = null; this.bumpCD = rand(0, 2);
+    this.burn = 0; this.spreads = 0; this.soot = 0; this.sootT = 0; this.immuneT = 0; this.helpT = 0; this.seekCD = 0;   // cháy: độ cháy 0–1, độ đen 0–1
     this.g = put(new PIXI.Graphics(), peopleLayer);
     this.g.pivot.set(0, -30);                 // xoay quanh giữa thân, chân vẫn ở (x, y)
-    this.redrawIn = 0; this.gl = null;        // glow tạo lười lúc tắm nắng
+    this.redrawIn = 0; this.gl = null; this.fgl = null;   // glow tạo lười lúc tắm nắng / lúc cháy
   }
   get busy() { return this.idleT > 0 || this.eatT > 0 || this.spinT > 0; }
 
@@ -38,6 +39,44 @@ class Person {
     sfx('ouch', this.x, { pitch: 2 - this.s });          // 「イテテ！」 — người nhỏ giọng cao hơn
     if (this.state !== 'air') this.fly(0, -rand(300, 360));
   }
+  get panic() { return this.burn >= BURN_BIG; }
+  ignite(p, spreads = 1) {                  // bắt lửa: chỉ mạnh lên, không yếu đi; spreads = số người còn lây được
+    if (p <= this.burn) return;
+    this.spreads = spreads;
+    if (this.burn <= 0) { this.idleT = this.spinT = 0; this.helpT = 0.25; if (this.eat) { this.eat.taken = null; this.eat = null; this.eatT = 0; } }
+    this.burn = Math.min(1, p); this.soot = 1; this.sootT = SOOT_HOLD;
+  }
+  douse() {                                 // mưa dập lửa: xèo + vòng hơi nước
+    this.burn = 0; this.immuneT = 4; this.sootT = SOOT_HOLD;
+    for (let i = 0; i < 3; i++) fx.push({ type: 'pop', x: this.x + rand(-6, 6), y: this.y - rand(45, 70) * this.s, r0: 3, t: -i * 0.12, life: 0.45 });
+    sfx('hiss', this.x);
+  }
+  burning(dt) {
+    this.burn -= dt * (this.panic ? 0.05 : 0.15);      // cháy to ~9s mới nhỏ lại, cháy nhỏ ~3s tự tắt
+    this.sootT = SOOT_HOLD;
+    for (const d of drops)
+      if (Math.abs(d.x - this.x) < 12 && d.y > this.y - 72 * this.s && d.y < this.y + 4) { this.douse(); return; }
+    if (this.burn <= 0) { this.burn = 0; this.immuneT = 3; return; }
+    if (Math.random() < 12 * dt * this.burn)
+      fx.push({ type: 'ember', x: this.x + rand(-7, 7), y: this.y - rand(50, 75) * this.s, vy: -rand(40, 80), t: 0, life: rand(0.4, 0.8) });
+    if (!this.panic) return;
+    if ((this.helpT -= dt) <= 0) { this.helpT = rand(1.6, 2.4); this.surpriseT = 0.7; sfx('help', this.x, { pitch: 2 - this.s }); }
+    if (this.spreads <= 0) return;
+    for (const q of people) {                 // lây cho 1 người đứng sát / cùng tháp; người bị lây không lây tiếp
+      if (q === this || q.burn > 0 || q.immuneT > 0) continue;
+      if (q === this.rider || q === this.carrier || (Math.abs(q.x - this.x) < 14 && Math.abs(q.y - this.y) < 30)) {
+        q.ignite(this.burn * 0.8, 0); this.spreads--; return;
+      }
+    }
+  }
+  seekWater() {                             // hướng về mây đang mưa gần nhất; không có thì mây gần nhất
+    let best = null, bd = 1e9;
+    for (const c of clouds) {
+      const d = Math.abs(c.x - this.x) - (c.rain > 0 ? 1e5 : 0);
+      if (d < bd) { bd = d; best = c; }
+    }
+    if (best && Math.abs(best.x - this.x) > 16) this.dir = Math.sign(best.x - this.x);
+  }
   startEat(b) {
     this.eat = b; b.taken = this; this.eatT = 1.4;
     const bx = b.plant ? b.plant.x + BERRY_AT[b.slot][0] : b.x;
@@ -55,7 +94,9 @@ class Person {
   }
 
   update(dt) {
-    this.bumpCD -= dt; this.hotT -= dt; this.surpriseT -= dt; this.glowT -= dt;
+    this.bumpCD -= dt; this.hotT -= dt; this.surpriseT -= dt; this.glowT -= dt; this.immuneT -= dt; this.seekCD -= dt;
+    if (this.burn > 0) this.burning(dt);
+    else if (this.soot > 0 && (this.sootT -= dt) <= 0) this.soot = Math.max(0, this.soot - dt / 2);
     if (this.spinT > 0) this.spinT -= dt;
     if (this.eatT > 0) { this.eatT -= dt; if (this.eatT <= 0) this.finishEat(); }
     if (this.state === 'walk') this.walk(dt);
@@ -69,19 +110,21 @@ class Person {
 
   walk(dt) {
     if (!settle(this)) { this.fly(this.dir * this.speed * 0.5, 0); return; }   // nét dưới chân mất
-    if (this.busy) {
+    const panic = this.panic;
+    if (this.busy && !panic) {
       if (this.idleT > 0) { this.idleT -= dt; if (this.idleT <= 0 && Math.random() < 0.3) this.dir *= -1; }
       return;
     }
-    if ((this.nextIdle -= dt) <= 0) { this.idleT = rand(0.7, 2.5); this.nextIdle = rand(5, 14); return; }
-    this.acc += this.speed * dt;
+    if (panic) { if (this.seekCD <= 0) this.seekWater(); }
+    else if ((this.nextIdle -= dt) <= 0) { this.idleT = rand(0.7, 2.5); this.nextIdle = rand(5, 14); return; }
+    this.acc += this.speed * (panic ? 2.2 : 1) * dt;
     while (this.acc >= 1) {
       this.acc -= 1;
       const r = walkStep(this, STEP_UP, BODY_H * this.s);   // mép màn: walkStep trả 'wall', không tự xử lý
-      if (r === 'wall') { this.dir *= -1; this.acc = 0; break; }
+      if (r === 'wall') { this.dir *= -1; this.acc = 0; this.seekCD = 1.5; break; }
       if (r === 'fall') { this.fly(this.dir * this.speed, 0); return; }
     }
-    this.look();
+    if (!panic) this.look();
   }
 
   look() {
@@ -122,6 +165,7 @@ class Person {
   ride(dt) {
     const c = this.carrier;
     if (!c || c.state === 'air' || c.state === 'climb') { this.fly(this.dir * 40, -60); return; }  // tháp đổ
+    if (this.panic) { this.fly(this.dir * rand(60, 100), -rand(140, 200)); return; }               // cháy to: nhảy xuống chạy tìm mưa
     if (this.idleT > 0) this.idleT -= dt;
     else if (!this.busy) this.ox += this.dir * this.speed * 0.4 * dt;
     this.x = c.x + this.ox; this.y = c.y - HEAD_TOP * c.s;
@@ -152,6 +196,7 @@ class Person {
         }
       }
       for (const q of people) {
+        if (this.panic) break;
         if (q === this || q.rider || q.state === 'air' || q.state === 'climb') continue;
         const top = q.y - HEAD_TOP * q.s;
         if (Math.abs(q.x - this.x) < 9 && this.y <= top && top <= this.y + this.vy * dt && towerDepth(q) < MAX_TOWER) {
@@ -175,6 +220,7 @@ class Person {
         const away = Math.sign(this.x - it.x) || -this.dir;
         this.dir = away; this.hotT = 1.1; this.surpriseT = 1;
         sfx('hot', this.x, { pitch: 2 - this.s });          // 「あちち」
+        this.ignite(rand(0.3, 1));                           // bắt lửa: ≥ BURN_BIG cháy to, dưới thì cháy nhỏ tự tắt
         this.fly(away * rand(170, 250), -rand(380, 480)); return;
       }
       if (it.type === 'cow' && it.state === 'live' && !it.air && this.state !== 'air'
@@ -209,6 +255,13 @@ class Person {
       this.gl.scale.set(1.1 + 0.08 * Math.sin(this.anim * 3));
       this.gl.alpha = Math.min(1, this.glowT / 2) * 0.9;
     } else if (this.gl) this.gl.visible = false;
+    if (this.burn > 0) {
+      this.fgl = this.fgl || glow(0xff7a30);
+      this.fgl.visible = true;
+      this.fgl.position.set(this.rx, this.ry - 50 * this.s);
+      this.fgl.scale.set((0.5 + 0.6 * this.burn) * (1 + 0.1 * Math.sin(this.anim * 7)));
+      this.fgl.alpha = 0.55 + 0.3 * this.burn;
+    } else if (this.fgl) this.fgl.visible = false;
   }
 }
 
@@ -236,21 +289,40 @@ function drawPerson(g, p) {
   else if (up) { const w = Math.sin(a * 3) * 2; lax = -9; lay = -39 + w; rax = 9; ray = -39 - w; }
   else { lax = -sw * 6 - 2; lay = -16; rax = sw * 6 + 2; ray = -16; }   // đứng = bước đi lúc sw = 0
 
+  const sk = p.soot, ink = sk > 0 ? mixC(CH, 0x2a2a2a, sk) : CH;           // bị cháy: phấn đen dần, mắt vẫn trắng
+  const line = w => sk > 0 ? Object.assign(chalk(w), { color: ink }) : chalk(w);
+  const hat = sk > 0 ? mixC(p.hat, 0x1c1c1c, sk) : p.hat;
+  const skin = { color: sk > 0 ? mixC(HEADFILL, 0x141414, sk) : HEADFILL, alpha: 0.55 + 0.4 * sk };
+
   g.moveTo(-1.5, -15).lineTo(lfx + J(), lfy + J());
   g.moveTo(1.5, -15).lineTo(rfx + J(), rfy + J());
   g.moveTo(-2, -26).lineTo(lax + J(), lay + J());
   g.moveTo(2, -26).lineTo(rax + J(), ray + J());
-  g.stroke(chalk(2.3));
+  g.stroke(line(2.3));
 
   const j = v => v + J(0.4);
   g.poly([j(-4), j(-29), j(-6.5), j(-15), j(6.5), j(-15), j(4), j(-29)], true);
-  g.fill({ color: HEADFILL, alpha: 0.55 }); g.stroke(chalk(2.2));
-  g.poly([-3.2, -28.6, 3.2, -28.6, 0.4, -19], true).fill(p.hat);
+  g.fill(skin); g.stroke(line(2.2));
+  g.poly([-3.2, -28.6, 3.2, -28.6, 0.4, -19], true).fill(hat);
 
   const hx = J(0.35), hy = -40 + J(0.35);
-  g.circle(hx, hy, 11).fill({ color: HEADFILL, alpha: 0.6 }).stroke(chalk(2.4));
+  g.circle(hx, hy, 11).fill(skin).stroke(line(2.4));
   g.circle(hx + 5.5, hy - 1.5, 1.5).fill(CH);
-  if (p.surpriseT > 0 || p.eatT > 0) g.circle(hx + 7.2, hy + 5, 1.7).stroke(chalk(1.3));
+  if (p.surpriseT > 0 || p.eatT > 0) g.circle(hx + 7.2, hy + 5, 1.7).stroke(sk > 0.5 ? chalk(1.3) : line(1.3));
   g.poly([hx - 11, hy - 4, hx + 8, hy - 7.5, hx - 8 + J(0.6), hy - 27 + J(0.6)], true);
-  g.fill(p.hat); g.stroke(chalk(2.2));
+  g.fill(hat); g.stroke(line(2.2));
+  if (p.burn > 0) {                         // ngọn lửa trên mũ + hai bên thân, to theo độ cháy
+    const k = 0.45 + 0.75 * p.burn;
+    people_flame(g, hx - 4, hy - 20, 15 * k, 30 * k);
+    if (p.burn >= BURN_BIG) { people_flame(g, -8, -18, 9 * k, 20 * k); people_flame(g, 8, -22, 9 * k, 18 * k); }
+  }
+}
+
+// ngọn lửa 3 lớp (đỏ/cam/vàng) đáy tại (x, y), cùng kiểu lửa của đồ vật
+function people_flame(g, x, y, w, h) {
+  for (const [kw, kh, c] of [[1, 1, 0xff4b2e], [0.7, 0.7, 0xff9a2e], [0.38, 0.4, 0xffe46a]]) {
+    const ww = w * kw, hh = h * kh * rand(0.85, 1.15), tip = x + J(1.5);
+    g.moveTo(x - ww / 2, y).quadraticCurveTo(x - ww, y - hh * 0.5, tip, y - hh)
+      .quadraticCurveTo(x + ww, y - hh * 0.5, x + ww / 2, y).closePath().fill({ color: c, alpha: 0.92 });
+  }
 }

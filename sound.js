@@ -9,7 +9,7 @@ const SND = {
   bgmNext: 0,
 };
 
-const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
+const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
 let snd_chalkLevel = 0, snd_chalkX = undefined;
 
 // ---------- helpers (chỉ dùng ctx + tham số) ----------
@@ -60,7 +60,7 @@ function snd_sendVerb(ctx, node, verb, amt) {
 }
 
 // ---------- giọng hoạt hình ----------
-const snd_VOWEL = { i: [320, 2600], e: [450, 2100], a: [750, 1250], o: [450, 900] };
+const snd_VOWEL = { i: [320, 2600], e: [450, 2100], a: [750, 1250], o: [450, 900], u: [330, 800] };
 function snd_voice(ctx, out, t, syllables, gain) {
   let cur = t;
   for (const s of syllables) {
@@ -69,10 +69,11 @@ function snd_voice(ctx, out, t, syllables, gain) {
     // phụ âm trước
     if (s.c === 't') snd_hitNoise(ctx, out, cur - 0.012, { dur: 0.012, hp: 3000, gain: gain * 0.8 });
     else if (s.c === 'ch') snd_hitNoise(ctx, out, cur - 0.03, { dur: 0.03, hp: 4000, gain: gain * 0.65 });
+    else if (s.c === 'k') snd_hitNoise(ctx, out, cur - 0.02, { dur: 0.02, bp: [1800, 2], gain: gain * 0.9 });
     // nguồn sawtooth glide -8%
     const os = ctx.createOscillator(); os.type = 'sawtooth';
     os.frequency.setValueAtTime(f, cur);
-    os.frequency.exponentialRampToValueAtTime(f * 0.92, cur + d);
+    os.frequency.exponentialRampToValueAtTime(f * (s.glide || 0.92), cur + d);
     const mix = ctx.createGain(); mix.gain.value = 0;
     for (const fq of snd_VOWEL[s.v] || snd_VOWEL.e) {
       const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fq; bp.Q.value = 8;
@@ -89,7 +90,7 @@ function snd_voice(ctx, out, t, syllables, gain) {
   return cur - t;
 }
 
-// ---------- 19 công thức sự kiện ----------
+// ---------- 21 công thức sự kiện ----------
 const SFX = {
   pop(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 900, f1: 200, slide: 0.06, dur: 0.09, gain: 0.45 });
@@ -152,6 +153,19 @@ const SFX = {
     ], 0.3);
     snd_hitNoise(ctx, out, t, { dur: 0.25, hp: 3000, gain: 0.06 });
     return Math.max(d, 0.25);
+  },
+  help(ctx, out, t, o) {                   // 「cứu! cứu!」 giọng hoạt hình nhỏ, lên giọng như dấu sắc
+    const p = o.pitch || 1;
+    return snd_voice(ctx, out, t, [
+      { c: 'k', v: 'i', f: 820, d: 0.05, pitch: p, glide: 1.1 },
+      { v: 'u', f: 900, d: 0.13, pitch: p, glide: 1.2 },
+      { c: 'k', v: 'i', f: 860, d: 0.05, pitch: p, glide: 1.1 },
+      { v: 'u', f: 960, d: 0.15, pitch: p, glide: 1.22 },
+    ], 0.42);
+  },
+  hiss(ctx, out, t) {                       // mưa dập lửa: xèo nhẹ
+    snd_hitNoise(ctx, out, t, { dur: 0.6, hp: 2500, lp: 7000, gain: 0.07 });
+    return 0.6;
   },
   bonk(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 120, f1: 60, slide: 0.12, dur: 0.12, gain: 0.45 });
@@ -302,6 +316,9 @@ function soundUpdate(dt) {
   // lửa
   let nf = 0;
   for (const it of items) if (it.type === 'fire' && it.state === 'live' && ++nf >= 3) break;
+  let nb = 0;                                          // người đang cháy cũng kêu tí tách
+  for (const p of people) if (p.burn > 0) nb++;
+  nf = Math.min(3, nf + Math.ceil(nb / 2));
   SND.fire.gain.gain.setTargetAtTime(SND.muted ? 0 : 0.03 * nf, t, 0.2);
   if (nf && !SND.muted && Math.random() < 12 * dt * nf)
     snd_hitNoise(ctx, SND.ambBus, t, { dur: rand(0.005, 0.015), bp: [rand(2000, 4000), 2], gain: rand(0.05, 0.12), buf: SND.noiseBuf });

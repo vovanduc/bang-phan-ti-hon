@@ -42,7 +42,7 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Thang (cách < 2px, chưa `seen`) | 80% bắt đầu leo |
 | Nấm (cách < 12×k) | Nhún `squash=1` + bật `vy = -1050..-1250` lên trời |
 | Quả dâu rời / cây stage 4 | Dừng ăn (xem mục dâu) |
-| Lửa (khe 22px, vùng y ±30/44) | Nảy tránh `vx = ±170..250`, `vy = -380..-480`, hotT=1,1s |
+| Lửa (khe 22px, vùng y ±30/44) | Nảy tránh `vx = ±170..250`, `vy = -380..-480`, hotT=1,1s + **bắt lửa** `ignite(rand(0.3,1))` (xem mục Cháy) |
 | Bò (khe 26×26px, bò không nhảy) | Bị húc văng xoay tròn `rotV = ±7..12`, choáng 0,7s khi đáp |
 | Vệt nắng | Xoay 2,2s + phát sáng 9s (1 lần mỗi lần mặt trời bật) |
 | Sao (đầu cách < 20×26, sao đã hiện >80%) | `burst()` — đụng sao |
@@ -79,11 +79,20 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 - Từng vật:
   - **Thang** (`h=300`): rơi nghiêng, đáp đất dựng thẳng; người leo 55px/s, xếp hàng chờ nếu có người trong 44px phía trên; tới đỉnh (`y ≤ L.y−L.h+4`) nhảy ra `vx ±60–150, vy −220…−340` — đưa người lên cao để đáp lên đầu người khác / lên nét / thỉnh thoảng đụng sao thấp. LIFE 45s.
   - **Nấm**: bàn nhún — mũ `y−42k`, nửa rộng `27k`; người đi ngang → bật `vy −1050…−1250`; người rơi trúng mũ → nhún lại `vy −1000…−1200`. `k` lớn 0,4→1 (tốc 2,5/s). LIFE 45s.
-  - **Lửa**: người tới gần nảy tránh (xem bảng trên); lửa sống `LIFE=10`s, bắn tàn lửa ~14 lần/s. LIFE 10s.
+  - **Lửa**: người tới gần nảy tránh và bắt lửa (xem mục Cháy); lửa sống `LIFE=10`s, bắn tàn lửa ~14 lần/s.
   - **Bò**: chạy `rand(130,170)` px/s trên địa hình (leo ≤4px), thỉnh thoảng nhảy cẫng (30%/s, `vy −260…−380`); húc người văng xoay tròn → tháp đổ (người bên dưới thành 'air'). LIFE 30s.
   - **Dâu** (`berry`): người ăn như trên. LIFE 40s.
   - **Sao**: nổ ngay khi bong bóng vỡ.
 - Đồ vật trên nét → nét mờ thì `settle` thất bại → rơi xuống (`state='fall'`).
+
+## Cháy (thêm 2026-10-13, v1.1.0)
+- `Person.burn` 0–1 = độ cháy; `ignite(p, spreads=1)` chỉ tăng, không giảm. Đụng đồ vật lửa → `rand(0.3, 1)`.
+- **Cháy to** (`burn ≥ BURN_BIG = 0.55`, getter `panic`): lửa trên mũ + hai bên thân, vầng sáng cam; kêu cứu (`sfx('help')`, 「cứu! cứu!」) mỗi 1,6–2,4s; bỏ đứng nghỉ/ăn/trèo tháp/leo thang, chạy nhanh ×2,2 về **mây đang mưa gần nhất**, không có thì mây gần nhất (`seekWater`; đụng tường → quay đầu, 1,5s không tìm hướng). Đang cưỡi tháp thì nhảy xuống. Yếu đi 0,05/s.
+- **Cháy nhỏ** (`< 0.55`): một ngọn lửa nhỏ, đi bình thường, yếu đi 0,15/s → tự tắt sau ≤ 3,7s. Tổng thời gian cháy tối đa ~13s nếu không có mưa (không bao giờ "chết").
+- **Lây**: người cháy to lây cho **1** người đứng sát (|dx| < 14, |dy| < 30) hoặc cùng tháp, lực `burn × 0.8`; người bị lây có `spreads = 0` nên không lây tiếp. Đụng lửa lại thì được `spreads = 1` lại. Đo 3 lần 1 đám lửa/20s: (trực tiếp, bị lây) = (3,1), (9,10), (6,3).
+- **Mưa dập lửa**: giọt mưa trong |dx| < 12, từ đầu tới chân → `douse()`: tắt ngay, `sfx('hiss')` + 3 vòng hơi nước; miễn bắt lây 4s (tự tắt: 3s). Đo: mưa ngay trên đầu → tắt sau ~0,8s (thời gian giọt rơi từ mây).
+- **Đen**: bắt lửa → `soot = 1` (phấn, mũ, mặt chuyển đen, mắt vẫn trắng); giữ `SOOT_HOLD = 6`s sau khi tắt rồi phai về màu thường trong 2s.
+- Tiếng lửa liên tục tính cả người đang cháy: `min(3, số đám lửa + ceil(số người cháy / 2))`.
 
 ## Chim
 - Đàn **7 chim** giấy (4 hồng `0xffa6d2`, 3 trắng) bám quanh tâm đàn `flock` (điểm đến ngẫu nhiên, tốc 95 px/s; mỗi chim lắc sin quanh chỗ mình trong đàn, tốc tối đa 150).
@@ -110,6 +119,8 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Nấm nhún | `boing` |
 | Chạm người | `ouch` — giọng "i-te-te" (giống 「イテテ！」bản gốc) |
 | Chạm lửa | `hot` — giọng "a-chi-chi" (「あちち」) + "xèo" |
+| Cháy to (mỗi 1,6–2,4s) | `help` — giọng "cứu! cứu!" lên giọng |
+| Mưa dập lửa | `hiss` — xèo nhẹ |
 | Bò húc | `bonk` | 
 | Bò kêu | `moo` |
 | Đồ chạm đất | `land` (thang: 2 tiếng "cạch") |
@@ -119,10 +130,10 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Người xoay trong nắng | `spin` — 6 nốt nhanh (「くるくる」) |
 | Chim đậu/cất cánh | `chirp` |
 | Vẽ nét | `chalk` — cộng mức phấn, tiếng do lớp liên tục |
-| Liên tục | Mưa rơi (theo số giọt), lửa cháy (theo số đám lửa, tối đa 3), phấn cào bảng |
+| Liên tục | Mưa rơi (theo số giọt), lửa cháy (theo số đám lửa + người đang cháy, tối đa 3), phấn cào bảng |
 | Nhạc nền | Hộp nhạc tự sinh: nốt ngũ cung C ngẫu nhiên mỗi 0,6–1,8s, rất nhẹ (bgmBus 0,22) |
 
-Kiểm (Chromium headless — không nghe được): 19/19 công thức render `OfflineAudioContext` ra tín hiệu, đỉnh 0,027–0,662, không vỡ; đầu ra lúc chạy: nhạc nền + tiếng nền 0,011 RMS, bong bóng vỡ 0,061; kéo nét bằng chuột thật → mức tiếng phấn 0,08; nút tắt tiếng đưa master về 0 rồi 0,9. **Chưa kiểm bằng tai.**
+Kiểm (Chromium headless — không nghe được): 19/19 công thức render `OfflineAudioContext` ra tín hiệu, đỉnh 0,027–0,662, không vỡ; đầu ra lúc chạy: nhạc nền + tiếng nền 0,011 RMS, bong bóng vỡ 0,061; kéo nét bằng chuột thật → mức tiếng phấn 0,08; nút tắt tiếng đưa master về 0 rồi 0,9. **Chưa kiểm bằng tai.** 2026-10-13 thêm `help` (đỉnh 0,184 sau khi tăng gain 0,22→0,42; `hot` là 0,27) và `hiss` (đỉnh 0,071) — render OfflineAudioContext có tín hiệu, chưa nghe bằng tai.
 
 ## Chuỗi nhân quả
 
@@ -187,7 +198,7 @@ Video gốc đã xem theo khung hình (kênh teamLab trên YouTube): [McDonald's
 | Chạm người/mây/mặt trời; mưa → cỏ ba lá; mưa lên hạt → cây dâu; tắm nắng xoay + sáng | ✅ đủ |
 | Bong bóng → thang, lửa, nấm, bò (video thêm sao, dâu) | ✅ đủ 6 loại |
 | Chuỗi sao → hạt → dâu → người ăn | ✅ |
-| Âm thanh (ghi công Sound: teamLab; イテテ！/ あちち) | ✅ tổng hợp Web Audio: 19 tiếng sự kiện + mưa/lửa/phấn liên tục + hộp nhạc nền; giọng "i-te-te" / "a-chi-chi" (trang JP không nói rõ là giọng hay chữ — v4 chọn giọng) |
+| Âm thanh (ghi công Sound: teamLab; イテテ！/ あちち) | ✅ tổng hợp Web Audio: 21 tiếng sự kiện + mưa/lửa/phấn liên tục + hộp nhạc nền; giọng "i-te-te" / "a-chi-chi" (trang JP không nói rõ là giọng hay chữ — v4 chọn giọng) |
 | **Chưa có** | |
 | Người **trượt** dốc (「すべったり」) | ❌ |
 | Nét nhiều màu "năng lực" (bản "A Canvas where Little People Live") | ❌ |

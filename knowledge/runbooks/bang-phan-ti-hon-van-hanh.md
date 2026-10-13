@@ -14,7 +14,7 @@ Thư mục: root repo (`index.html` + `*.js`). Cơ chế chi tiết: [knowledge/
 - Hoặc tự chạy server: `python3 -m http.server 8765` ở root repo → mở `http://127.0.0.1:8765/`.
 - Cần mạng lần đầu: PixiJS 8.6.6 tải từ CDN jsdelivr.
 - ⚠️ Link localhost do **agent** bật sẽ chết khi agent tắt server/thoát — đưa user kèm cả hai cách trên (xem [gotcha](../gotchas/demo-web-agent.md)).
-- **Bản công khai:** https://vovanduc.github.io/bang-phan-ti-hon/ — GitHub Pages build từ `main` / của chính repo này. Cập nhật: commit → push `main`; Pages tự build (~30 s, kiểm bằng `gh api repos/vovanduc/bang-phan-ti-hon/pages --jq .status` = `built`). `archive/` cũng được serve (vd `/archive/v2-teamlab-pixi.html`).
+- **Bản công khai:** https://vovanduc.github.io/chalk-little-people/ — GitHub Pages build từ `main` / của chính repo này (repo đổi tên từ `bang-phan-ti-hon` 2026-10-13; link Pages cũ đã chết). Cập nhật: commit → push `main`; Pages tự build (~30 s, kiểm bằng `gh api repos/vovanduc/chalk-little-people/pages --jq .status` = `built`). `archive/` cũng được serve (vd `/archive/v2-teamlab-pixi.html`).
 
 ## 2. Kiến trúc
 Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong index.html:
@@ -32,7 +32,7 @@ Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong ind
 
 Luật: file entity chỉ **khai báo** (không chạy gì lúc nạp, không đụng `PIXI.*`/layer ở top-level); top-level chỉ đúng các tên liệt kê (helper khác → `static` hoặc prefix `<slice>_`); trùng `const/let/class` giữa file = SyntaxError cả trang.
 
-Hợp đồng field giữa slice (người khác đọc/ghi): `Person.{x,y,state,rider,carrier,busy,eat,poke()}`, `Item.{type,x,y,state,k,squash,h,dir,air,taken,dead}`, `Seed.{x,y,stage,berries,rain()}`, `Star.{x,y,r,color,k}`, `Cloud.{x,y,w,h,rain,tap()}`, `sun.{x,y,r,on,id,shine(),lit(),update(),render()}`, hàm `burst`, `waterAt`, `trimItems`.
+Hợp đồng field giữa slice (người khác đọc/ghi): `Person.{x,y,state,rider,carrier,busy,eat,poke(),burn,soot,panic,ignite(p,spreads)}`, `Item.{type,x,y,state,k,squash,h,dir,air,taken,dead}`, `Seed.{x,y,stage,berries,rain()}`, `Star.{x,y,r,color,k}`, `Cloud.{x,y,w,h,rain,tap()}`, `sun.{x,y,r,on,id,shine(),lit(),update(),render()}`, hàm `burst`, `waterAt`, `trimItems`.
 
 ## 3. Kiểm thử
 Hook `window.__bb` (core.js): mảng `people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops` + `sun`, `WW`, `GY`; hàm `step(n)` (bơm n tick, **60 bước = 1 giây**, mỗi step render), `tap(x,y)` (= `tapAt`), `draw(pts)` (pts = [x0,y0,x1,y1,…]), `drop(type,x,y=300)`.
