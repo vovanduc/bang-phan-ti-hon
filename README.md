@@ -21,6 +21,7 @@ Tái tạo **cơ chế** tác phẩm "A Blackboard where Little People Live" c�
 ## Phát triển
 Đọc [runbook](knowledge/runbooks/bang-phan-ti-hon-van-hanh.md) trước: kiến trúc file, hợp đồng field giữa slice, hook kiểm thử `window.__bb`, cách thêm cơ chế mới.
 Deploy: push `main` → GitHub Pages tự build.
+Phát hành phiên bản: cập nhật [CHANGELOG.md](CHANGELOG.md), commit, `git tag -a vX.Y.Z -m "vX.Y.Z"`, `git push origin main vX.Y.Z`, `gh release create vX.Y.Z --notes-from-tag` (hoặc dán mục changelog).
 
 ## Lịch sử
 Bắt đầu trong repo private `community-builder` (2026-07 → 2026-10, F007 — demo cho AI Riser 2026); chuyển sang đây 2026-10-13. Lịch sử commit cũ ở lại repo đó.
