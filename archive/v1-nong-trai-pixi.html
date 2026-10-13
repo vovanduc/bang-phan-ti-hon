@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bảng Làng — v1 nông trại (PixiJS)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #182420; }
+  #hud {
+    position: fixed; top: 12px; left: 16px; z-index: 10;
+    color: #f0ead8; font: 15px "Comic Sans MS", "Chalkboard SE", cursive;
+    opacity: .85; user-select: none; line-height: 1.5;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.js"></script>
+</head>
+<body>
+<div id="hud">trâu: 0 / 50<br>fps: —</div>
+<script>
+(async () => {
+  const CHALK = 0xf0ead8;
+  const MAX = 50, START = 10, SPAWN_EVERY = 1.2; // giây
+
+  const app = new PIXI.Application();
+  await app.init({ resizeTo: window, background: 0x182420, antialias: true });
+  document.body.appendChild(app.canvas);
+  window.__app = app; // debug: bơm tick thủ công khi tab bị throttle
+
+  const W = () => app.screen.width, H = () => app.screen.height;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const jit = v => v + rand(-0.9, 0.9); // run rẩy nét phấn (chalk boil)
+
+  const stroke = { width: 2.4, color: CHALK, alpha: 0.9, cap: 'round', join: 'round' };
+  const thin   = { width: 1.6, color: CHALK, alpha: 0.55, cap: 'round' };
+
+  // ---- nền: chân trời + cỏ + mặt trời, vẽ 1 lần ----
+  const bg = new PIXI.Graphics();
+  app.stage.addChild(bg);
+  function drawBg() {
+    bg.clear();
+    const gy = H() * 0.55;
+    // chân trời nét đứt
+    for (let x = 0; x < W(); x += 34) {
+      bg.moveTo(jit(x), jit(gy)).lineTo(jit(x + 20), jit(gy));
+    }
+    bg.stroke(thin);
+    // cỏ rải rác
+    for (let i = 0; i < 40; i++) {
+      const x = rand(0, W()), y = rand(gy + 20, H() - 10);
+      bg.moveTo(x, y).lineTo(x - 3, y - 7);
+      bg.moveTo(x, y).lineTo(x + 1, y - 9);
+      bg.moveTo(x, y).lineTo(x + 4, y - 6);
+    }
+    bg.stroke(thin);
+    // mặt trời
+    const sx = W() * 0.82, sy = H() * 0.18;
+    bg.circle(sx, sy, 26).stroke(stroke);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+      bg.moveTo(sx + Math.cos(a) * 34, sy + Math.sin(a) * 34)
+        .lineTo(sx + Math.cos(a) * 44, sy + Math.sin(a) * 44);
+    }
+    bg.stroke(thin);
+  }
+  drawBg();
+
+  // ---- con trâu (nhiều hàng depth: gần to, xa nhỏ — như nhìn cánh đồng) ----
+  class Buffalo {
+    constructor() {
+      this.g = new PIXI.Graphics();
+      app.stage.addChild(this.g);
+      this.reset(true);
+      this.redrawIn = 0;
+      this.redraw();
+    }
+    reset(first) {
+      const gy = H() * 0.55;
+      this.depth = Math.random();                       // 0 = xa, 1 = gần
+      this.y = gy + 30 + this.depth * (H() - gy - 70);
+      this.scale = 0.45 + this.depth * 0.75;
+      this.x = first ? rand(-120, W() * 0.5) : -rand(80, 260);
+      this.speed = rand(28, 55) * this.scale;
+      this.phase = rand(0, Math.PI * 2);
+      this.state = 'walk';
+      this.timer = rand(3, 8);
+    }
+    update(dt) {
+      this.timer -= dt;
+      if (this.state === 'walk') {
+        this.x += this.speed * dt;
+        this.phase += this.speed * dt * 0.09;
+        if (this.timer <= 0) { this.state = 'graze'; this.timer = rand(1.5, 4); }
+        if (this.x > W() + 120) this.reset(false);
+      } else if (this.timer <= 0) {
+        this.state = 'walk'; this.timer = rand(3, 8);
+      }
+      this.redrawIn -= dt;
+      if (this.redrawIn <= 0) { this.redraw(); this.redrawIn = 0.09; } // ~11fps: hiệu ứng phấn vẽ tay
+    }
+    redraw() {
+      const g = this.g, s = this.scale, ph = this.phase, grazing = this.state === 'graze';
+      g.clear();
+      g.position.set(this.x, this.y);
+      g.scale.set(s);
+      g.zIndex = this.y;
+
+      // 4 chân (2 cặp lệch pha)
+      const legSwing = grazing ? 0 : 9;
+      const legs = [[-26, 0], [-19, Math.PI], [20, Math.PI], [27, 0]];
+      for (const [lx, off] of legs) {
+        const dx = Math.sin(ph + off) * legSwing;
+        g.moveTo(jit(lx), jit(-26)).lineTo(jit(lx + dx), jit(0));
+      }
+      // thân
+      g.ellipse(0, -38, 40, 19);
+      // bướu vai
+      g.moveTo(jit(10), jit(-56)).quadraticCurveTo(jit(22), jit(-63), jit(32), jit(-52));
+      // đầu: đi = ngẩng, gặm = cúi
+      const hx = grazing ? 46 : 50, hy = grazing ? -14 : -36;
+      g.ellipse(hx, hy, 11, 8);
+      // sừng lưỡi liềm to, cong về sau (đặc trưng trâu)
+      g.moveTo(jit(hx - 2), jit(hy - 6))
+        .quadraticCurveTo(jit(hx - 26), jit(hy - 30), jit(hx - 42), jit(hy - 20));
+      g.moveTo(jit(hx + 3), jit(hy - 7))
+        .quadraticCurveTo(jit(hx - 14), jit(hy - 38), jit(hx - 34), jit(hy - 32));
+      // đuôi ve vẩy
+      const tw = Math.sin(ph * 0.7) * 5;
+      g.moveTo(jit(-40), jit(-48)).quadraticCurveTo(jit(-50 + tw), jit(-30), jit(-46 + tw), jit(-12));
+      g.stroke(stroke);
+      // mắt
+      g.circle(hx + 4, hy - 2, 1.6).fill({ color: CHALK, alpha: 0.9 });
+    }
+  }
+
+  app.stage.sortableChildren = true;
+  const herd = [];
+  for (let i = 0; i < START; i++) herd.push(new Buffalo());
+  window.__herd = () => herd;
+
+  window.addEventListener('resize', () => setTimeout(() => {
+    drawBg();
+    // re-seat đàn vào dải đất mới
+    for (const b of herd) {
+      const gy = H() * 0.55;
+      b.y = gy + 30 + b.depth * (H() - gy - 70);
+    }
+  }, 100));
+
+  // ---- vòng lặp ----
+  const hud = document.getElementById('hud');
+  let spawnT = 0, fpsT = 0;
+  app.ticker.add(ticker => {
+    const dt = ticker.deltaMS / 1000;
+    spawnT += dt;
+    if (herd.length < MAX && spawnT >= SPAWN_EVERY) { spawnT = 0; herd.push(new Buffalo()); }
+    for (const b of herd) b.update(dt);
+    fpsT += dt;
+    if (fpsT > 0.5) {
+      fpsT = 0;
+      hud.innerHTML = `trâu: ${herd.length} / ${MAX}<br>fps: ${Math.round(ticker.FPS)}`;
+    }
+  });
+})();
+</script>
+</body>
+</html>

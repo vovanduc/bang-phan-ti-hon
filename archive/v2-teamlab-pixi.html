@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bảng Làng — demo trâu (PixiJS)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #182420; }
+  #hud {
+    position: fixed; top: 12px; left: 16px; z-index: 10;
+    color: #f0ead8; font: 15px "Comic Sans MS", "Chalkboard SE", cursive;
+    opacity: .85; user-select: none; line-height: 1.5; pointer-events: none;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.js"></script>
+</head>
+<body>
+<div id="hud">trâu: 0 / 50<br>fps: —<br>☁ chạm vào mây để làm mưa</div>
+<script>
+(async () => {
+  const CHALK = 0xf0ead8;
+  const MAX = 50, START = 10, SPAWN_EVERY = 1.2; // giây
+  const EDGE = 70;                 // biên bật lại
+  const STACK_H = 40;              // cao 1 tầng khi chồng lên nhau
+  const MAX_LVL = 3;
+  const GROUND = () => app.screen.height * 0.72; // 1 đường đất duy nhất (side-view như teamLab)
+
+  const app = new PIXI.Application();
+  await app.init({ resizeTo: window, background: 0x182420, antialias: true });
+  document.body.appendChild(app.canvas);
+  window.__app = app; // debug: bơm tick thủ công khi tab bị throttle
+  window.__herd = () => herd;
+
+  const W = () => app.screen.width, H = () => app.screen.height;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const jit = v => v + rand(-0.9, 0.9); // run rẩy nét phấn (chalk boil)
+
+  const stroke = { width: 2.4, color: CHALK, alpha: 0.9, cap: 'round', join: 'round' };
+  const thin   = { width: 1.6, color: CHALK, alpha: 0.55, cap: 'round' };
+
+  // ---- nền: đường đất + mặt trời ----
+  const bg = new PIXI.Graphics();
+  app.stage.addChild(bg);
+  function drawBg() {
+    bg.clear();
+    const gy = GROUND();
+    bg.moveTo(0, jit(gy)).lineTo(W(), jit(gy)).stroke(stroke);
+    const sx = W() * 0.82, sy = H() * 0.14;
+    bg.circle(sx, sy, 26).stroke(stroke);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+      bg.moveTo(sx + Math.cos(a) * 34, sy + Math.sin(a) * 34)
+        .lineTo(sx + Math.cos(a) * 44, sy + Math.sin(a) * 44);
+    }
+    bg.stroke(thin);
+  }
+  drawBg();
+
+  // ---- cỏ (mọc thêm khi mưa rơi xuống đất) ----
+  const grassG = new PIXI.Graphics();
+  app.stage.addChild(grassG);
+  const grass = [];
+  for (let i = 0; i < 20; i++) grass.push(rand(0, 3000));
+  function drawGrass() {
+    grassG.clear();
+    const gy = GROUND();
+    for (const x of grass) {
+      grassG.moveTo(x, gy).lineTo(x - 3, gy - 8);
+      grassG.moveTo(x, gy).lineTo(x + 1, gy - 10);
+      grassG.moveTo(x, gy).lineTo(x + 4, gy - 7);
+    }
+    grassG.stroke(thin);
+  }
+  drawGrass();
+
+  // ---- mây: click → mưa ----
+  class Cloud {
+    constructor(fx, fy) {
+      this.g = new PIXI.Graphics();
+      this.fx = fx; this.fy = fy;          // vị trí theo tỷ lệ màn hình
+      this.x = W() * fx; this.speed = rand(6, 14);
+      this.raining = 0; this.redrawIn = 0;
+      this.g.eventMode = 'static';
+      this.g.cursor = 'pointer';
+      this.g.hitArea = new PIXI.Rectangle(-80, -45, 160, 90);
+      this.g.on('pointerdown', () => { this.raining = 5; });
+      app.stage.addChild(this.g);
+      this.redraw();
+    }
+    update(dt) {
+      this.x += this.speed * dt;
+      if (this.x > W() + 100) this.x = -100;
+      if (this.raining > 0) {
+        this.raining -= dt;
+        for (let i = 0; i < 3; i++) drops.push({ x: this.x + rand(-60, 60), y: H() * this.fy + 30, v: rand(380, 520) });
+      }
+      this.redrawIn -= dt;
+      if (this.redrawIn <= 0) { this.redraw(); this.redrawIn = 0.12; }
+    }
+    redraw() {
+      const g = this.g;
+      g.clear();
+      g.position.set(this.x, H() * this.fy);
+      // cụm 3 vòng cung phấn
+      g.arc(jit(-35), jit(5), 22, Math.PI * 0.4, Math.PI * 1.6);
+      g.arc(jit(0), jit(-12), 27, Math.PI * 0.75, Math.PI * 2.05);
+      g.arc(jit(35), jit(5), 22, Math.PI * 1.4, Math.PI * 0.6);
+      g.moveTo(jit(-40), jit(24)).lineTo(jit(42), jit(24));
+      g.stroke(stroke);
+      if (this.raining > 0) { // mắt mây "khóc" cho vui
+        g.circle(-10, 0, 1.6).fill({ color: CHALK, alpha: 0.9 });
+        g.circle(12, 0, 1.6).fill({ color: CHALK, alpha: 0.9 });
+      }
+    }
+  }
+
+  // mưa: mảng hạt, vẽ chung 1 Graphics mỗi frame
+  const rainG = new PIXI.Graphics();
+  app.stage.addChild(rainG);
+  const drops = [];
+  function updateRain(dt) {
+    rainG.clear();
+    const gy = GROUND();
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      d.y += d.v * dt;
+      if (d.y >= gy) {
+        drops.splice(i, 1);
+        if (Math.random() < 0.08 && grass.length < 150) { grass.push(d.x + rand(-6, 6)); drawGrass(); }
+        continue;
+      }
+      rainG.moveTo(d.x, d.y).lineTo(d.x - 1.5, d.y + 9);
+    }
+    if (drops.length) rainG.stroke({ width: 1.8, color: CHALK, alpha: 0.65, cap: 'round' });
+  }
+
+  // ---- con trâu (side-view, cùng 1 mặt phẳng, không che nhau — chồng tầng) ----
+  class Buffalo {
+    constructor(fromLeft) {
+      this.g = new PIXI.Graphics();
+      app.stage.addChild(this.g);
+      this.scale = rand(0.5, 0.75);            // to nhỏ = cá tính, KHÔNG phải depth
+      this.lazy = Math.random() < 0.25;        // con lười: nghỉ lâu hơn hẳn
+      this.x = fromLeft ? -rand(80, 300) : rand(EDGE, W() - EDGE);
+      this.dir = 1;
+      this.speed = rand(30, 60);
+      this.phase = rand(0, Math.PI * 2);
+      this.state = 'walk';
+      this.timer = rand(3, 9);
+      this.level = 0;      // tầng đang đứng (0 = mặt đất)
+      this.lift = 0;       // px nâng hiện tại (lerp mượt về level*STACK_H)
+      this.redrawIn = 0;
+      this.redraw();
+    }
+    halfW() { return 48 * this.scale; }
+    update(dt) {
+      this.timer -= dt;
+      if (this.state === 'walk') {
+        this.x += this.speed * this.dir * dt;
+        this.phase += this.speed * dt * 0.09;
+        // đụng mép → quay đầu, không đi ra khỏi khung
+        if (this.x > W() - EDGE) this.dir = -1;
+        if (this.x < EDGE) this.dir = 1;
+        if (this.timer <= 0) {
+          this.state = 'graze';
+          this.timer = this.lazy ? rand(8, 18) : rand(1.5, 4);
+        }
+      } else if (this.timer <= 0) {
+        this.state = 'walk'; this.timer = rand(3, 9);
+        if (Math.random() < 0.3) this.dir *= -1; // nghỉ dậy đổi ý đi hướng khác
+      }
+      // nâng/hạ mượt theo tầng
+      const target = this.level * STACK_H;
+      this.lift += (target - this.lift) * Math.min(1, dt * 5);
+      this.g.position.set(this.x, GROUND() - this.lift);
+      this.redrawIn -= dt;
+      if (this.redrawIn <= 0) { this.redraw(); this.redrawIn = 0.09; } // ~11fps: hiệu ứng phấn vẽ tay
+    }
+    redraw() {
+      const g = this.g, ph = this.phase, grazing = this.state === 'graze';
+      g.clear();
+      g.position.set(this.x, GROUND() - this.lift);
+      g.scale.set(this.scale * this.dir, this.scale); // lật theo hướng đi
+      g.zIndex = this.level;
+
+      const legSwing = grazing ? 0 : 9;
+      const legs = [[-26, 0], [-19, Math.PI], [20, Math.PI], [27, 0]];
+      for (const [lx, off] of legs) {
+        const dx = Math.sin(ph + off) * legSwing;
+        g.moveTo(jit(lx), jit(-26)).lineTo(jit(lx + dx), jit(0));
+      }
+      g.ellipse(0, -38, 40, 19);                                     // thân
+      g.moveTo(jit(10), jit(-56)).quadraticCurveTo(jit(22), jit(-63), jit(32), jit(-52)); // bướu vai
+      const hx = grazing ? 46 : 50, hy = grazing ? -14 : -36;        // đầu: đi = ngẩng, gặm = cúi
+      g.ellipse(hx, hy, 11, 8);
+      // sừng lưỡi liềm cong về sau
+      g.moveTo(jit(hx - 2), jit(hy - 6))
+        .quadraticCurveTo(jit(hx - 26), jit(hy - 30), jit(hx - 42), jit(hy - 20));
+      g.moveTo(jit(hx + 3), jit(hy - 7))
+        .quadraticCurveTo(jit(hx - 14), jit(hy - 38), jit(hx - 34), jit(hy - 32));
+      const tw = Math.sin(ph * 0.7) * 5;                             // đuôi ve vẩy
+      g.moveTo(jit(-40), jit(-48)).quadraticCurveTo(jit(-50 + tw), jit(-30), jit(-46 + tw), jit(-12));
+      g.stroke(stroke);
+      g.circle(hx + 4, hy - 2, 1.6).fill({ color: CHALK, alpha: 0.9 }); // mắt
+    }
+  }
+
+  // 1 vị trí chỉ 1 con mỗi tầng: con tới sau leo lên tầng trống thấp nhất
+  // ponytail: O(n²) mỗi frame, 50 con vô tư; grid nếu lên trăm con
+  function resolveStacks() {
+    for (let i = 0; i < herd.length; i++) {
+      const b = herd[i];
+      let lvl = 0, moved = true;
+      while (moved && lvl < MAX_LVL) {
+        moved = false;
+        for (let j = 0; j < i; j++) {
+          const o = herd[j];
+          if (o.level === lvl && Math.abs(b.x - o.x) < (b.halfW() + o.halfW()) * 0.6) {
+            lvl++; moved = true; break;
+          }
+        }
+      }
+      b.level = lvl;
+    }
+  }
+
+  app.stage.sortableChildren = true;
+  const herd = [];
+  for (let i = 0; i < START; i++) herd.push(new Buffalo(true));
+  const clouds = [new Cloud(0.25, 0.16), new Cloud(0.55, 0.24)];
+
+  // ---- vòng lặp ----
+  const hud = document.getElementById('hud');
+  let spawnT = 0, fpsT = 0, lastGround = GROUND();
+  app.ticker.add(ticker => {
+    const dt = ticker.deltaMS / 1000;
+    if (GROUND() !== lastGround) { lastGround = GROUND(); drawBg(); drawGrass(); } // canvas đổi size → vẽ lại nền
+    spawnT += dt;
+    if (herd.length < MAX && spawnT >= SPAWN_EVERY) { spawnT = 0; herd.push(new Buffalo(true)); }
+    resolveStacks();
+    for (const b of herd) b.update(dt);
+    for (const c of clouds) c.update(dt);
+    updateRain(dt);
+    fpsT += dt;
+    if (fpsT > 0.5) {
+      fpsT = 0;
+      hud.innerHTML = `trâu: ${herd.length} / ${MAX}<br>fps: ${Math.round(ticker.FPS)}<br>☁ chạm vào mây để làm mưa`;
+    }
+  });
+})();
+</script>
+</body>
+</html>

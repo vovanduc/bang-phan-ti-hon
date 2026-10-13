@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bảng Làng — demo trâu (Three.js)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #182420; }
+  #hud {
+    position: fixed; top: 12px; left: 16px; z-index: 10;
+    color: #f0ead8; font: 15px "Comic Sans MS", "Chalkboard SE", cursive;
+    opacity: .85; user-select: none; line-height: 1.5; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="hud">trâu: 0 / 50<br>fps: —<br>☁ chạm vào mây để làm mưa</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const CHALK = 0xf0ead8;
+const MAX = 50, START = 10, SPAWN_EVERY = 1.2;
+const EDGE = 70, STACK_H = 40, MAX_LVL = 3;
+
+// giữ size nonzero cuối cùng (innerWidth = 0 khi tab ẩn → sim hỏng)
+let vw = window.innerWidth || 1280, vh = window.innerHeight || 720;
+const W = () => vw, H = () => vh;
+const GROUND = () => H() * 0.72;
+const rand = (a, b) => a + Math.random() * (b - a);
+const jit = v => v + rand(-0.9, 0.9);
+
+// ---- renderer: ortho camera map 1:1 pixel màn hình, y hướng xuống (giống Pixi) ----
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x182420);
+let camera = new THREE.OrthographicCamera(0, W(), 0, H(), -10, 10);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(W(), H());
+document.body.appendChild(renderer.domElement);
+
+// batch nét phấn = 1 LineSegments buffer động (three không có Graphics API như Pixi)
+class ChalkLines {
+  constructor(maxVerts, opacity = 0.9) {
+    const geo = new THREE.BufferGeometry();
+    this.pos = new Float32Array(maxVerts * 3);
+    geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    this.obj = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: CHALK, transparent: true, opacity }));
+    this.obj.frustumCulled = false;
+    this.n = 0;
+    scene.add(this.obj);
+    geo.setDrawRange(0, 0);
+  }
+  begin() { this.n = 0; }
+  seg(x1, y1, x2, y2) {
+    const p = this.pos, i = this.n * 3;
+    if (i + 6 > p.length) return;
+    p[i] = x1; p[i + 1] = y1; p[i + 2] = 0;
+    p[i + 3] = x2; p[i + 4] = y2; p[i + 5] = 0;
+    this.n += 2;
+  }
+  poly(pts) { for (let i = 0; i < pts.length - 1; i++) this.seg(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]); }
+  end() {
+    this.obj.geometry.setDrawRange(0, this.n);
+    this.obj.geometry.attributes.position.needsUpdate = true;
+  }
+}
+// đường cong phải tự sample thành đoạn thẳng (Pixi có sẵn quadraticCurveTo/ellipse)
+const qcurve = (x0, y0, cx, cy, x1, y1, n = 8) => {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    pts.push([u * u * x0 + 2 * u * t * cx + t * t * x1, u * u * y0 + 2 * u * t * cy + t * t * y1]);
+  }
+  return pts;
+};
+const ellipse = (cx, cy, rx, ry, n = 24) => {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const a = i / n * Math.PI * 2;
+    pts.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]);
+  }
+  return pts;
+};
+const arc = (cx, cy, r, a0, a1, n = 10) => {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + (a1 - a0) * i / n;
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  return pts;
+};
+
+// ---- nền + cỏ ----
+const bgL = new ChalkLines(600, 0.9);
+function drawBg() {
+  bgL.begin();
+  bgL.seg(0, jit(GROUND()), W(), jit(GROUND()));
+  const sx = W() * 0.82, sy = H() * 0.14;
+  bgL.poly(arc(sx, sy, 26, 0, Math.PI * 2, 24));
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+    bgL.seg(sx + Math.cos(a) * 34, sy + Math.sin(a) * 34, sx + Math.cos(a) * 44, sy + Math.sin(a) * 44);
+  }
+  bgL.end();
+}
+drawBg();
+
+const grassL = new ChalkLines(1000, 0.55);
+const grass = [];
+for (let i = 0; i < 20; i++) grass.push(rand(0, 3000));
+function drawGrass() {
+  grassL.begin();
+  const gy = GROUND();
+  for (const x of grass) {
+    grassL.seg(x, gy, x - 3, gy - 8);
+    grassL.seg(x, gy, x + 1, gy - 10);
+    grassL.seg(x, gy, x + 4, gy - 7);
+  }
+  grassL.end();
+}
+drawGrass();
+
+// ---- mây: click → mưa ----
+class Cloud {
+  constructor(fx, fy) {
+    this.L = new ChalkLines(200, 0.9);
+    this.fx = fx; this.fy = fy;
+    this.x = W() * fx; this.speed = rand(6, 14);
+    this.raining = 0; this.redrawIn = 0;
+    this.redraw();
+  }
+  update(dt) {
+    this.x += this.speed * dt;
+    if (this.x > W() + 100) this.x = -100;
+    if (this.raining > 0) {
+      this.raining -= dt;
+      for (let i = 0; i < 3; i++) drops.push({ x: this.x + rand(-60, 60), y: H() * this.fy + 30, v: rand(380, 520) });
+    }
+    this.redrawIn -= dt;
+    if (this.redrawIn <= 0) { this.redraw(); this.redrawIn = 0.12; }
+  }
+  hit(mx, my) { return Math.abs(mx - this.x) < 80 && Math.abs(my - H() * this.fy) < 45; }
+  redraw() {
+    const cy = H() * this.fy, x = this.x, L = this.L;
+    L.begin();
+    L.poly(arc(x + jit(-35), cy + jit(5), 22, Math.PI * 0.4, Math.PI * 1.6));
+    L.poly(arc(x + jit(0), cy + jit(-12), 27, Math.PI * 0.75, Math.PI * 2.05));
+    L.poly(arc(x + jit(35), cy + jit(5), 22, Math.PI * 1.4, Math.PI * 0.6));
+    L.seg(x + jit(-40), cy + jit(24), x + jit(42), cy + jit(24));
+    if (this.raining > 0) { // mắt mây khóc
+      L.poly(ellipse(x - 10, cy, 2, 2, 6));
+      L.poly(ellipse(x + 12, cy, 2, 2, 6));
+    }
+    L.end();
+  }
+}
+
+// ---- mưa ----
+const rainL = new ChalkLines(4000, 0.65);
+const drops = [];
+function updateRain(dt) {
+  rainL.begin();
+  const gy = GROUND();
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const d = drops[i];
+    d.y += d.v * dt;
+    if (d.y >= gy) {
+      drops.splice(i, 1);
+      if (Math.random() < 0.08 && grass.length < 150) { grass.push(d.x + rand(-6, 6)); drawGrass(); }
+      continue;
+    }
+    rainL.seg(d.x, d.y, d.x - 1.5, d.y + 9);
+  }
+  rainL.end();
+}
+
+// ---- con trâu (sim GIỐNG HỆT bản Pixi, chỉ khác cách vẽ) ----
+class Buffalo {
+  constructor(fromLeft) {
+    this.L = new ChalkLines(512, 0.9);
+    this.scale = rand(0.5, 0.75);
+    this.lazy = Math.random() < 0.25;
+    this.x = fromLeft ? -rand(80, 300) : rand(EDGE, W() - EDGE);
+    this.dir = 1;
+    this.speed = rand(30, 60);
+    this.phase = rand(0, Math.PI * 2);
+    this.state = 'walk';
+    this.timer = rand(3, 9);
+    this.level = 0;
+    this.lift = 0;
+    this.redrawIn = 0;
+    this.redraw();
+  }
+  halfW() { return 48 * this.scale; }
+  update(dt) {
+    this.timer -= dt;
+    if (this.state === 'walk') {
+      this.x += this.speed * this.dir * dt;
+      this.phase += this.speed * dt * 0.09;
+      if (this.x > W() - EDGE) this.dir = -1;
+      if (this.x < EDGE) this.dir = 1;
+      if (this.timer <= 0) {
+        this.state = 'graze';
+        this.timer = this.lazy ? rand(8, 18) : rand(1.5, 4);
+      }
+    } else if (this.timer <= 0) {
+      this.state = 'walk'; this.timer = rand(3, 9);
+      if (Math.random() < 0.3) this.dir *= -1;
+    }
+    const target = this.level * STACK_H;
+    this.lift += (target - this.lift) * Math.min(1, dt * 5);
+    this.L.obj.position.set(this.x, GROUND() - this.lift, 0);
+    this.redrawIn -= dt;
+    if (this.redrawIn <= 0) { this.redraw(); this.redrawIn = 0.09; }
+  }
+  redraw() {
+    const L = this.L, ph = this.phase, grazing = this.state === 'graze';
+    L.obj.position.set(this.x, GROUND() - this.lift, 0);
+    L.obj.scale.set(this.scale * this.dir, this.scale, 1);
+    L.begin();
+    const legSwing = grazing ? 0 : 9;
+    const legs = [[-26, 0], [-19, Math.PI], [20, Math.PI], [27, 0]];
+    for (const [lx, off] of legs) {
+      const dx = Math.sin(ph + off) * legSwing;
+      L.seg(jit(lx), jit(-26), jit(lx + dx), jit(0));
+    }
+    L.poly(ellipse(0, -38, 40, 19, 28));                                       // thân
+    L.poly(qcurve(jit(10), jit(-56), jit(22), jit(-63), jit(32), jit(-52)));   // bướu vai
+    const hx = grazing ? 46 : 50, hy = grazing ? -14 : -36;
+    L.poly(ellipse(hx, hy, 11, 8, 16));                                        // đầu
+    L.poly(qcurve(jit(hx - 2), jit(hy - 6), jit(hx - 26), jit(hy - 30), jit(hx - 42), jit(hy - 20))); // sừng
+    L.poly(qcurve(jit(hx + 3), jit(hy - 7), jit(hx - 14), jit(hy - 38), jit(hx - 34), jit(hy - 32)));
+    const tw = Math.sin(ph * 0.7) * 5;
+    L.poly(qcurve(jit(-40), jit(-48), jit(-50 + tw), jit(-30), jit(-46 + tw), jit(-12)));             // đuôi
+    L.poly(ellipse(hx + 4, hy - 2, 1.6, 1.6, 6));                              // mắt
+    L.end();
+  }
+}
+
+// 1 vị trí chỉ 1 con mỗi tầng (giống bản Pixi)
+function resolveStacks() {
+  for (let i = 0; i < herd.length; i++) {
+    const b = herd[i];
+    let lvl = 0, moved = true;
+    while (moved && lvl < MAX_LVL) {
+      moved = false;
+      for (let j = 0; j < i; j++) {
+        const o = herd[j];
+        if (o.level === lvl && Math.abs(b.x - o.x) < (b.halfW() + o.halfW()) * 0.6) {
+          lvl++; moved = true; break;
+        }
+      }
+    }
+    b.level = lvl;
+  }
+}
+
+const herd = [];
+for (let i = 0; i < START; i++) herd.push(new Buffalo(true));
+const clouds = [new Cloud(0.25, 0.16), new Cloud(0.55, 0.24)];
+
+window.addEventListener('pointerdown', e => {
+  for (const c of clouds) if (c.hit(e.clientX, e.clientY)) c.raining = 5;
+});
+window.addEventListener('resize', () => {
+  if (!window.innerWidth || !window.innerHeight) return;
+  vw = window.innerWidth; vh = window.innerHeight;
+  camera.right = W(); camera.bottom = H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+  drawBg(); drawGrass();
+});
+
+// ---- vòng lặp ----
+const hud = document.getElementById('hud');
+let spawnT = 0, fpsT = 0, frames = 0;
+function update(dt) {
+  spawnT += dt;
+  if (herd.length < MAX && spawnT >= SPAWN_EVERY) { spawnT = 0; herd.push(new Buffalo(true)); }
+  resolveStacks();
+  for (const b of herd) b.update(dt);
+  for (const c of clouds) c.update(dt);
+  updateRain(dt);
+}
+let last = performance.now();
+renderer.setAnimationLoop(now => {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  renderer.render(scene, camera);
+  frames++; fpsT += dt;
+  if (fpsT > 0.5) {
+    hud.innerHTML = `trâu: ${herd.length} / ${MAX}<br>fps: ${Math.round(frames / fpsT)}<br>☁ chạm vào mây để làm mưa`;
+    fpsT = 0; frames = 0;
+  }
+});
+
+// debug: bơm tick thủ công khi tab bị throttle
+window.__step = n => { for (let i = 0; i < n; i++) update(1 / 60); renderer.render(scene, camera); };
+window.__herd = () => herd;
+window.__clouds = () => clouds;
+</script>
+</body>
+</html>
