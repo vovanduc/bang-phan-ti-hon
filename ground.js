@@ -15,7 +15,7 @@ function waterAt(x, y, ground) {
   if (!ground || Math.random() > 0.1) return;
   let c = null;
   for (const q of clovers) if (Math.abs(q.x - x) < 7) { c = q; break; }
-  if (c) c.s = Math.min(1, c.s + 0.25);                    // tưới cỏ cũ: to dần
+  if (c) { cloverRain(c); c.s = Math.min(1, c.s + 0.25); }   // tưới cỏ cũ: to dần; to hết cỡ thì nở hoa (nature.js)
   else if (clovers.length < MAX_CLOVERS) { clovers.push({ x, s: 0.3, age: 0 }); sfx('clover', x); }
   cloverDirty = true;
 }
@@ -45,6 +45,13 @@ function drawClovers() {
     }
   }
   cloverG.fill({ color: 0x49e28e, alpha: 0.95 });
+  for (const c of clovers) {                // hoa: cuống cao hơn + 5 cánh + nhụy vàng
+    if (!c.flower) continue;
+    const fx0 = c.x + 1, fy = GY - 20 * c.s, r = 3 * c.s;
+    cloverG.moveTo(c.x + 1, GY - 9 * c.s).lineTo(fx0, fy).stroke({ width: 1.6, color: 0x49e28e, cap: 'round' });
+    for (let k = 0; k < 5; k++) cloverG.circle(fx0 + Math.cos(k * 1.2566) * r * 1.2, fy + Math.sin(k * 1.2566) * r * 1.2, r);
+    cloverG.fill(c.flower).circle(fx0, fy, r * 0.8).fill(0xffd23a);
+  }
 }
 
 // Ụ đất nâu; mưa đủ thì thành cây dâu

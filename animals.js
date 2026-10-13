@@ -70,10 +70,20 @@ const ANIMALS = {
   croc: {
     init(it) {
       Object.assign(it, { mode: 'walk', modeT: 0, jaw: 0, rider: null, seatY: 22, seatW: 22, s: 1,
-        midY: 13, hitW: 50, hitH: 26, snapCD: rand(4, 8), sprayCD: 0, target: null, flipY: false });
+        midY: 13, hitW: 50, hitH: 26, snapCD: rand(4, 8), sprayCD: 0, target: null, flipY: false, swimCD: rand(2, 5), sink: 0, pool: null });
     },
     update(it, dt) {
-      it.modeT -= dt; it.snapCD -= dt; it.sprayCD -= dt;
+      it.modeT -= dt; it.snapCD -= dt; it.sprayCD -= dt; it.swimCD -= dt;
+      it.sink += ((it.mode === 'swim' ? 8 : 0) - it.sink) * Math.min(1, 4 * dt);   // bơi: chìm nửa thân
+      if (it.mode === 'swim') {                       // bơi qua lại trong vũng nước
+        const p = it.pool;
+        if (!p || !puddles.includes(p) || p.hw < 18 || it.modeT <= 0) { it.pool = null; it.swimCD = rand(12, 20); ani_mode(it, 'walk', 0); return; }
+        if ((it.x <= p.xl + 12 && it.dir < 0) || (it.x >= p.xr - 12 && it.dir > 0)) it.dir *= -1;
+        if (Math.random() < 3 * dt) fx.push({ type: 'ripple', x: it.x - it.dir * 30, y: p.level, r0: 3, t: 0, life: 0.8 });
+        const b = ani_burning(it, 240, 120);
+        if (b && it.sprayCD <= 0) { it.target = b; ani_face(it, b.x); ani_mode(it, 'spray', 0.9); sfx('spray', it.x); return; }
+        ani_walk(it, dt, 22, 4, 20); return;
+      }
       if (it.mode === 'laugh') {
         it.jaw = 0.6 + 0.3 * Math.sin(it.anim * 18);
         if (it.modeT <= 0) { it.flipY = false; ani_mode(it, 'walk', 0); }
@@ -111,6 +121,13 @@ const ANIMALS = {
           if (p.state === 'walk' && ahead > 30 && ahead < 90 && Math.abs(p.y - it.y) < 20) { p.surpriseT = 1; p.fly(it.dir * rand(90, 140), -rand(260, 320)); }
         }
         return;
+      }
+      if (it.swimCD <= 0 && !it.air) {                // thấy vũng nước rộng → bò tới bơi
+        const p = puddleAt(it.x, it.y, 420, 25);
+        if (p) {
+          if (it.x > p.xl + 10 && it.x < p.xr - 10) { it.pool = p; ani_mode(it, 'swim', rand(7, 11)); sfx('splash', it.x); return; }
+          ani_face(it, p.x);
+        } else it.swimCD = 3;
       }
       ani_walk(it, dt, 38, 4, 20);
     },

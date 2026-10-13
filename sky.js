@@ -64,6 +64,7 @@ function updateRain(dt) {
     } else {
       swapRemove(drops, i);
       waterAt(d.x, hit - 1, hit >= GY);                // hit-1 = hàng chân ngay trên mặt
+      puddleRain(d.x, hit - 1);                        // nước chảy về chỗ trũng → vũng (nature.js)
     }
   }
 }

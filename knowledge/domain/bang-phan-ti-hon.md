@@ -101,6 +101,16 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 - **Gấu** (`bear`, LIFE 35s): đi 22 px/s. Người trèo lên đầu gấu (`seatY 62`, `seatW 9`) thành tháp. **Ăn dâu**: bụi chín trong 300px → tới ăn từng quả 0,8s (tim bay) tới hết, rồi **ngủ** 7s (chữ z bay lên); nghỉ ăn 20–30s. Lúc ngủ: người đi qua (|dx| < 26) bị bụng gấu nhún bật `vy −800…−950`. **Dập lửa**: người cháy trong 320px → chạy 70 px/s tới, cách < 40px thì nhảy dậm (`thud` + vòng bụi) → `douse()`. **Chạm** → ôm người gần nhất trong 100px (tim cả hai, người đứng yên nhìn gấu 1,4s); chạm gấu đang ngủ → thức dậy.
 - Người trên lưng/đầu thú rơi xuống khi thú lật, ngủ, nhảy, mờ đi, hoặc người đó cháy to.
 
+## Cầu vồng, vũng nước, hoa & bướm (thêm 2026-10-13, v1.2.0) — `nature.js`
+- **Cầu vồng**: mặt trời đang sáng (`sun.on > 0`) **và** có mây đang mưa → hiện (tâm = mây mưa gần mặt trời nhất, kẹp trong màn). Cung tròn qua 2 chân cách 640px, cao 190px (R ≈ 364) → dốc chân ~62° < 71° nên người đi lên như cây cầu. Đậm dần 0,7/s; `k > 0.6` thì mép ngoài được đóng dấu vào mặt nạ va chạm (`rebuildMask` gọi `rainbow.stamp()`). Còn 14s sau khi hết nắng hoặc hết mưa, rồi nhạt 0,5/s → người trên cầu rơi bồng bềnh như nét phấn mờ. Tiếng `rainbow` (hạc cầm 7 nốt). Đo: 6 người cùng lúc trên cầu.
+- **Vũng nước**: mỗi giọt mưa chạm mặt → `nat_flow` cho nước chảy theo dốc (không leo tường; gặp đoạn phẳng thì dò ≤ 60px xem phía nào dốc xuống — đỉnh vòm chảy đi, đáy chữ U đọng lại; chảy khỏi mép nét thì mất). Gộp vào vũng trong ±max(30, nửa rộng + 8)px; vũng mới chỉ 15% mỗi giọt, tối đa `MAX_PUDDLES = 10`, thể tích ≤ 400. **Có thành 2 bên** (nét chữ U) → mực nước dâng sâu tới 22px như hồ; **mặt thoáng** (đất phẳng, sườn) → loang mỏng ≤ 4px, rộng tới 110px mỗi bên. Hết mưa 3s thì khô 1,5 thể tích/s; nét đỡ mờ mất thì vũng mất. Đo: nét U dưới mây mưa 10s → hồ rộng ~120px, sâu 20px; trên cầu vồng không đọng vũng nào.
+- Người lội vũng: té nước (4 giọt + `splash`, 0,5–1s/lần). **Người đang cháy lội vào vũng → tắt lửa**; người cháy to chạy tới vũng rộng ≥ 24px như tới mây mưa (đo: tắt sau 1,5s).
+- **Cá sấu bơi**: vũng rộng ≥ 50px trong 420px → bò tới, bơi qua lại 7–11s (chìm 8px, gợn nước sau đuôi), vẫn phun nước dập lửa; nghỉ bơi 12–20s. Người trên lưng vẫn ngồi được. Đo: bơi 7,5s.
+- **Hoa**: giọt mưa trúng cỏ ba lá đã to hết cỡ (`s = 1`) 5 lần → nở hoa 5 cánh (hồng/vàng/trắng/tím/cam, nhụy vàng), tiếng `bloom`. Hoa già theo cỏ (140s rồi teo).
+- **Bướm**: số bướm tối đa = min(6, ⌈số hoa / 2⌉), bay vào từ mép màn mỗi 2–5s, bay chập chờn tới một hoa chưa có bướm, đậu 3–7s rồi tìm hoa khác; hết hoa thì bay khỏi màn.
+- **Ngửi hoa → hắt xì**: người đi bộ ngang hoa (|dx| ≤ 2) có 35% dừng 1,4s ngửi rồi hắt xì (`achoo`, nhảy lùi nhẹ); bướm trong 40px giật mình bay đi. Mỗi người 8–14s mới ngửi lại.
+- Hiệu năng (Chromium trong app, 2026-10-13, cả 3 mây mưa + cầu vồng + 8 vũng + 6 bướm): tick+render+`gl.finish` TB 4,57ms, p95 10ms, tệ nhất 14,2ms / 180 frame. Chưa so với bản cũ trên cùng máy.
+
 ## Chim
 - Đàn **7 chim** giấy (4 hồng `0xffa6d2`, 3 trắng) bám quanh tâm đàn `flock` (điểm đến ngẫu nhiên, tốc 95 px/s; mỗi chim lắc sin quanh chỗ mình trong đàn, tốc tối đa 150).
 - Lần đầu sau 6–10s, các lần sau 8–15s (không có nét phù hợp thì thử lại sau 3s): chọn **1 nét đã vẽ xong** (`!drawing`, `!fading`, ≥ 8 điểm, tuổi < 52s) → cả đàn đáp dàn trải ±7 điểm quanh một điểm ngẫu nhiên của nét.
@@ -132,6 +142,10 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Khỉ ném dâu, phóng lên, nhào lộn | `ook` — "u-a" |
 | Gấu ngủ, thức, ôm | `grunt` — "hừm" trầm |
 | Gấu dậm lửa | `thud` |
+| Cầu vồng hiện | `rainbow` |
+| Lội vũng / cá sấu xuống nước | `splash` |
+| Hoa nở | `bloom` |
+| Người hắt xì | `achoo` |
 | Bò húc | `bonk` | 
 | Bò kêu | `moo` |
 | Đồ chạm đất | `land` (thang: 2 tiếng "cạch") |
@@ -209,7 +223,7 @@ Video gốc đã xem theo khung hình (kênh teamLab trên YouTube): [McDonald's
 | Chạm người/mây/mặt trời; mưa → cỏ ba lá; mưa lên hạt → cây dâu; tắm nắng xoay + sáng | ✅ đủ |
 | Bong bóng → thang, lửa, nấm, bò (video thêm sao, dâu) | ✅ đủ 6 loại |
 | Chuỗi sao → hạt → dâu → người ăn | ✅ |
-| Âm thanh (ghi công Sound: teamLab; イテテ！/ あちち) | ✅ tổng hợp Web Audio: 27 tiếng sự kiện + mưa/lửa/phấn liên tục + hộp nhạc nền; giọng "i-te-te" / "a-chi-chi" (trang JP không nói rõ là giọng hay chữ — v4 chọn giọng) |
+| Âm thanh (ghi công Sound: teamLab; イテテ！/ あちち) | ✅ tổng hợp Web Audio: 31 tiếng sự kiện + mưa/lửa/phấn liên tục + hộp nhạc nền; giọng "i-te-te" / "a-chi-chi" (trang JP không nói rõ là giọng hay chữ — v4 chọn giọng) |
 | **Chưa có** | |
 | Người **trượt** dốc (「すべったり」) | ❌ |
 | Nét nhiều màu "năng lực" (bản "A Canvas where Little People Live") | ❌ |

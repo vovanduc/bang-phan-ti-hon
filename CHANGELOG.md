@@ -6,6 +6,15 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-13
+
+### Added
+- **Rainbow**: when the sun is shining while a cloud rains, a rainbow appears and people can walk over it like a bridge. It stays 14 s after the sun or rain stops, then fades and anyone on it floats down.
+- **Puddles**: rain runs downhill and pools. Flat ground gets shallow puddles; a U-shaped chalk line fills into a pond. Puddles dry up after the rain stops.
+- People splash through puddles. A burning person who walks into water is put out, and big fires make people run to the nearest puddle.
+- The crocodile swims in big puddles.
+- **Flowers**: clover that keeps getting rain blooms into flowers.
+- **Butterflies** fly in to rest on flowers. People stop to sniff a flower and sneeze, startling the butterflies.
 ## [1.1.1] - 2026-10-13
 
 ### Fixed
@@ -41,7 +50,8 @@ First release on GitHub Pages: the game known internally as "v4", moved from `co
 - Test hook `window.__bb`.
 - `archive/` prototypes v1–v3, `docs/` specs and build contracts, `knowledge/` project notes.
 
-[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.0.0

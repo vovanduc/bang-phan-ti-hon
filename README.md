@@ -13,15 +13,17 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 |---|---|
 | Drag on the board | Draw a chalk line. People walk on it, climb gentle slopes, turn at steep walls, fall off the ends. Lines fade after 60 s. |
 | Tap a person | They jump and say "ouch". |
-| Tap a cloud | It rains. Rain grows clover and berry bushes; people eat the berries. |
-| Tap the sun | A sunbeam makes people in it spin and glow. |
+| Tap a cloud | It rains. Rain grows clover, flowers and berry bushes, and collects in puddles. |
+| Tap the sun | A sunbeam makes people in it spin and glow. Sun and rain together make a rainbow people can walk over. |
 | Tap a star | It bursts into sparkles and drops seeds. |
 | Tap a bubble | It pops and drops a ladder, mushroom (trampoline), fire, cow, crocodile, monkey, bear, berry or star. |
 | Tap an animal | Crocodile rolls over giggling, monkey does a backflip, bear hugs the nearest person. |
 
 Fire: a person who touches fire catches it. A small fire burns out by itself. A big fire makes them cry for help and run toward the nearest cloud. Tap that cloud to make rain and put them out. Burned people turn black for a few seconds, then go back to normal. A big fire can spread to one person standing next to them.
 
-Animals: the **crocodile** carries people on its back, snaps at the air, and sprays water on anyone on fire. The **monkey** picks berries and throws them to people, and races up ladders to leap at the stars. The **bear** lets people stack on its head, eats a whole berry bush and falls asleep (its belly becomes a trampoline), and stomps out fires.
+Nature: rain runs downhill and pools. On flat ground it makes shallow puddles people splash through; draw a U-shaped line under a cloud and it fills into a pond. Well-watered clover blooms into flowers, butterflies come to rest on them, and people stop to sniff the flowers and sneeze.
+
+Animals: the **crocodile** carries people on its back, snaps at the air, and sprays water on anyone on fire, and swims in big puddles. The **monkey** picks berries and throws them to people, and races up ladders to leap at the stars. The **bear** lets people stack on its head, eats a whole berry bush and falls asleep (its belly becomes a trampoline), and stomps out fires.
 
 🔊 Sound starts after the first tap (browser rule). The speaker button bottom-left mutes it.
 
@@ -41,6 +43,7 @@ The first run needs internet: PixiJS 8.6.6 loads from the jsDelivr CDN.
 | `ground.js` | Clover, seeds, berry bushes |
 | `things.js` | Bubbles, dropped items, birds |
 | `animals.js` | Crocodile, monkey, bear |
+| `nature.js` | Rainbow, puddles, flowers, butterflies |
 | `sound.js` | All sounds, synthesized with Web Audio (no audio files) |
 | `archive/` | Early prototypes v1–v3 |
 | `docs/` | Analysis of the original artwork, specs, build contracts |

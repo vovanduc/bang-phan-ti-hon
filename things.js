@@ -70,7 +70,7 @@ class Item {                       // vật rơi ra từ bong bóng
     else if (this.type === 'cow') this.g.scale.set(this.dir, 1);
     else if (this.type === 'fire') this.g.scale.set(a);
     else if (ANIMALS[this.type]) {           // xoay/lật quanh giữa thân (nhào lộn, lật ngửa)
-      this.g.pivot.set(0, -this.midY); this.g.position.set(this.x, this.y - this.midY);
+      this.g.pivot.set(0, -this.midY); this.g.position.set(this.x, this.y - this.midY + (this.sink || 0));
       this.g.scale.set(this.dir, this.flipY ? -1 : 1);
     }
     if ((this.redrawIn -= dt) <= 0) { this.redrawIn = this.type === 'fire' ? 0.06 : 0.085; drawItem(this.g, this.type, this); }

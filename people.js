@@ -69,11 +69,16 @@ class Person {
       }
     }
   }
-  seekWater() {                             // hướng về mây đang mưa / cá sấu gần nhất; không có thì mây gần nhất
+  seekWater() {                             // hướng về mây đang mưa / vũng nước / cá sấu gần nhất; không có thì mây gần nhất
     let best = null, bd = 1e9;
     for (const c of clouds) {
       const d = Math.abs(c.x - this.x) - (c.rain > 0 ? 1e5 : 0);
       if (d < bd) { bd = d; best = c; }
+    }
+    for (const p of puddles) {                // vũng nước đủ rộng cũng là nước
+      if (p.hw < 12) continue;
+      const d = Math.abs(p.x - this.x) - 1e5;
+      if (d < bd) { bd = d; best = p; }
     }
     for (const it of items) {
       if (it.type !== 'croc' || it.state !== 'live') continue;
@@ -177,7 +182,7 @@ class Person {
   ride(dt) {
     const c = this.carrier;
     if (!c || c.state === 'air' || c.state === 'climb' || c.dead                                        // tháp đổ
-        || (c.seatY && (c.state !== 'live' || c.air || !['walk', 'spray', 'snap', 'eat', 'hug'].includes(c.mode)))) { this.fly(this.dir * 40, -60); return; }  // thú chở người: lật/ngủ/nhảy thì rơi
+        || (c.seatY && (c.state !== 'live' || c.air || !['walk', 'spray', 'snap', 'eat', 'hug', 'swim'].includes(c.mode)))) { this.fly(this.dir * 40, -60); return; }  // thú chở người: lật/ngủ/nhảy thì rơi
     if (this.panic) { this.fly(this.dir * rand(60, 100), -rand(140, 200)); return; }               // cháy to: nhảy xuống chạy tìm mưa
     if (this.idleT > 0) this.idleT -= dt;
     else if (!this.busy) this.ox += this.dir * this.speed * 0.4 * dt;
