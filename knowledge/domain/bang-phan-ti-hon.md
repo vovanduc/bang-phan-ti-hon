@@ -9,7 +9,7 @@ timestamp: 2026-09-28T00:00:00Z
 
 ## Tổng quan
 - Demo tại `` tái tạo **cơ chế** tác phẩm "A Blackboard where Little People Live" của teamLab (trang gốc: [EN](https://www.team-lab.com/en/blackboard/) · [JP](https://www.team-lab.com/blackboard/)). Không có thắng/thua — là một thế giới sống chạy vô hạn.
-- Ranh giới IP: mọi hình tự vẽ bằng code nét phấn (không chép asset), không dùng tên "Little People" làm tên sản phẩm, ghi công + link teamLab ở góc màn hình (`#credit` trong index.html).
+- Ranh giới IP: mọi hình tự vẽ bằng code nét phấn (không chép asset), không dùng tên "Little People" làm tên sản phẩm, ghi công teamLab trong README (link `#credit` ở góc màn hình bỏ từ v1.4.0 vì bé chạm vào là nhảy sang tab khác).
 - Thế giới: cao cố định `WH=900`, rộng `WW` theo màn hình (~1600 ở 16:9); y ≥ `GY=780` là đất; đơn vị px.
 - Quyết định thiết kế: xem [ADR-0004](../decisions/0004-bang-phan-v4-tai-tao-co-che.md); vận hành: xem [runbook](../runbooks/bang-phan-ti-hon-van-hanh.md).
 
@@ -17,7 +17,7 @@ timestamp: 2026-09-28T00:00:00Z
 Input: `pointerdown` → `tapAt(x,y)` (core.js). Chạm trúng vật → hành động tương ứng; chạm chỗ trống → bắt đầu vẽ nét. **Chạm mà không kéo thì không vẽ** (nét < 4 điểm bị xóa khi thả tay).
 
 Thứ tự ưu tiên trong `tapAt` — chạm trúng vật nào trước thì ăn, dừng ngay:
-`bong bóng` (bán kính + 10) → `sao` (trong 26px) → `người` (±16×scale ngang, từ chân lên 64×scale) → `mây` (w/2+8, h/2+8) → `mặt trời` (r+24).
+`bong bóng` (bán kính + 10) → `thùng dù / máy bay` (`planeTap`) → `sao` (trong 26px) → `người` (±16×scale ngang, từ chân lên 64×scale) → `mây` (w/2+8, h/2+8) → `mặt trời` (r+24).
 
 | # | Thao tác | Xảy ra ngay | Hệ quả kéo theo |
 |---|---|---|---|
@@ -40,9 +40,9 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Vật | Phản ứng |
 |---|---|
 | Thang (cách < 2px, chưa `seen`) | 80% bắt đầu leo |
-| Nấm (cách < 12×k) | Nhún `squash=1` + bật `vy = -1050..-1250` lên trời |
+| Nấm (cách < 12×k, nấm đang đứng) | Nhún `squash=1` + bật `vy = -1050..-1250` lên trời |
 | Quả dâu rời / cây stage 4 | Dừng ăn (xem mục dâu) |
-| Lửa (khe 22px, vùng y ±30/44) | Nảy tránh `vx = ±170..250`, `vy = -380..-480`, hotT=1,1s + **bắt lửa** `ignite(rand(0.3,1))` (xem mục Cháy) |
+| Lửa (khe 22×fs px, vùng y +30/−44×fs) | Nảy tránh `vx = ±170..250`, `vy = -380..-480`, hotT=1,1s + **bắt lửa** `ignite(rand(0.6,1))` (xem mục Cháy) |
 | Bò (khe 26×26px, bò không nhảy) | Bị húc văng xoay tròn `rotV = ±7..12`, choáng 0,7s khi đáp |
 | Vệt nắng | Xoay 2,2s + phát sáng 9s (1 lần mỗi lần mặt trời bật) |
 | Sao (đầu cách < 20×26, sao đã hiện >80%) | `burst()` — đụng sao |
@@ -74,22 +74,22 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 
 ## Bong bóng & đồ vật
 - Số bong bóng `MAXB = clamp(round(WW/450), 2, 5)` (≈4 ở WW=1600); bong bóng vỡ → `bubbleCD` 2–5s; hụt MAXB → `rand(3,6)`s nở cái mới. Trôi chậm vx ±16, vy ±7 + dao động sin.
-- `ITEM_TYPES` trọng số: `ladder ×2, mushroom ×2, fire ×1, cow ×1, croc ×1, monkey ×1, bear ×1, star ×1, berry ×2` → 9 loại (mỗi phần 1/12). Trước v1.1.0: 6 loại, mỗi phần 1/9.
+- `ITEM_TYPES` trọng số: `ladder ×2, mushroom ×3, fire ×2, cow ×1, croc ×1, monkey ×1, bear ×1, star ×1, berry ×2` → 9 loại (mỗi phần 1/14; v1.1.0–1.3.0: nấm ×2, lửa ×1, phần 1/12). Trước v1.1.0: 6 loại, mỗi phần 1/9.
 - Vỡ: sao → `burst` tại chỗ; loại khác → `new Item` rơi (G_I=1400, VT_I=900), chạm mặt → `live`; hết `LIFE` → mờ 1,2s → chết. Trần `MAX_ITEMS=10` (thừa → cái cũ nhất `fade()`).
 - Từng vật:
   - **Thang** (`h=300`): rơi nghiêng, đáp đất dựng thẳng; người leo 55px/s, xếp hàng chờ nếu có người trong 44px phía trên; tới đỉnh (`y ≤ L.y−L.h+4`) nhảy ra `vx ±60–150, vy −220…−340` — đưa người lên cao để đáp lên đầu người khác / lên nét / thỉnh thoảng đụng sao thấp. LIFE 45s.
-  - **Nấm**: bàn nhún — mũ `y−42k`, nửa rộng `27k`; người đi ngang → bật `vy −1050…−1250`; người rơi trúng mũ → nhún lại `vy −1000…−1200`. `k` lớn 0,4→1 (tốc 2,5/s). LIFE 45s.
-  - **Lửa**: người tới gần nảy tránh và bắt lửa (xem mục Cháy); lửa sống `LIFE=10`s, bắn tàn lửa ~14 lần/s.
+  - **Nấm**: bàn nhún — mũ `y−42k`, nửa rộng `27k`; người đi ngang → bật `vy −1050…−1250`; người rơi trúng mũ → nhún lại `vy −1000…−1200`. `k` lớn 0,4→1 (tốc 2,5/s). LIFE 45s. **Tự nhảy** (v1.4.0, `Item.hop`): mỗi 1,5–3,5s nhún `vy −260…−420`, trôi `vx 20–60` (30% đổi hướng), tiếng `boing`; đáp xuống thì bật người đi bộ trong 30×k px lên `vy −900…−1150`. Đo: 7 lần nhảy / 20s, trôi 124px, tối đa 3 người bay cùng lúc.
+  - **Lửa** (v1.4.0 `Item.blaze`): người tới gần nảy tránh và bắt lửa (xem mục Cháy); sống `LIFE=30`s (trước 10s); cỡ `fs` lớn dần 0,9→1,7 (0,1/s), vùng chạm và vầng sáng to theo; tàn lửa ~14×fs lần/s. **Mưa dập**: mỗi giọt trong vùng lửa trừ `hp` 0,12/s, có hơi nước; `hp ≤ 0` → `hiss`, mờ 0,6s. Đo: mưa ngay trên → tắt sau 2,8s.
   - **Bò**: chạy `rand(130,170)` px/s trên địa hình (leo ≤4px), thỉnh thoảng nhảy cẫng (30%/s, `vy −260…−380`); húc người văng xoay tròn → tháp đổ (người bên dưới thành 'air'). LIFE 30s.
   - **Dâu** (`berry`): người ăn như trên. LIFE 40s.
   - **Sao**: nổ ngay khi bong bóng vỡ.
 - Đồ vật trên nét → nét mờ thì `settle` thất bại → rơi xuống (`state='fall'`).
 
 ## Cháy (thêm 2026-10-13, v1.1.0)
-- `Person.burn` 0–1 = độ cháy; `ignite(p, spreads=1)` chỉ tăng, không giảm. Đụng đồ vật lửa → `rand(0.3, 1)`.
-- **Cháy to** (`burn ≥ BURN_BIG = 0.55`, getter `panic`): lửa trên mũ + hai bên thân, vầng sáng cam; kêu cứu (`sfx('help')`, 「cứu! cứu!」) mỗi 1,6–2,4s; bỏ đứng nghỉ/ăn/trèo tháp/leo thang, chạy nhanh ×2,2 về **mây đang mưa gần nhất**, không có thì mây gần nhất (`seekWater`; đụng tường → quay đầu, 1,5s không tìm hướng). Đang cưỡi tháp thì nhảy xuống. Yếu đi 0,05/s.
-- **Cháy nhỏ** (`< 0.55`): một ngọn lửa nhỏ, đi bình thường, yếu đi 0,15/s → tự tắt sau ≤ 3,7s. Tổng thời gian cháy tối đa ~13s nếu không có mưa (không bao giờ "chết").
-- **Lây**: người cháy to lây cho **1** người đứng sát (|dx| < 14, |dy| < 30) hoặc cùng tháp, lực `burn × 0.8`; người bị lây có `spreads = 0` nên không lây tiếp. Đụng lửa lại thì được `spreads = 1` lại. Đo 3 lần 1 đám lửa/20s: (trực tiếp, bị lây) = (3,1), (9,10), (6,3).
+- `Person.burn` 0–1 = độ cháy; `ignite(p, spreads=people_spreads(p))` chỉ tăng, không giảm. Đụng đồ vật lửa → `rand(0.6, 1)` (trước v1.4.0: 0,3–1).
+- **Cháy to** (`burn ≥ BURN_BIG = 0.55`, getter `panic`): lửa trên mũ + hai bên thân, vầng sáng cam; kêu cứu (`sfx('help')`, 「cứu! cứu!」) mỗi 1,6–2,4s; bỏ đứng nghỉ/ăn/trèo tháp/leo thang, chạy nhanh ×2,2 về **mây đang mưa gần nhất**, không có thì mây gần nhất (`seekWater`; đụng tường → quay đầu, 1,5s không tìm hướng). Đang cưỡi tháp thì nhảy xuống. Yếu đi 0,022/s (trước v1.4.0: 0,05).
+- **Cháy nhỏ** (`< 0.55`): một ngọn lửa nhỏ, đi bình thường, yếu đi 0,07/s → tự tắt sau ≤ 8s. Tổng thời gian cháy tối đa ~28s nếu không có mưa (v1.3.0: ~13s; không bao giờ "chết").
+- **Lây** (v1.4.0): người cháy to lây người đứng gần (|dx| < 14 + 22×burn, |dy| < 30) hoặc cùng tháp, tối đa 1 người/frame, lực `burn × 0.8`. Số người lây được `people_spreads(burn)`: ≥ 0,9 → 3, ≥ 0,55 → 1, nhỏ hơn → 0; người bị lây tính lại theo độ cháy của mình → chuỗi 1 → 0,8 → 0,64 → 0,51 rồi tắt. Đo 3 lần 1 đám lửa, không mưa, 33 người: tổng bắt lửa 27 / 30 / 24, cao nhất cùng lúc 22 / 22 / 19, hết cháy sau 52–54s — phần lớn do đám lửa sống 30s nên người đi vào trực tiếp nhiều lần. Trước v1.4.0 chỉ lây 1 người, người bị lây không lây tiếp.
 - **Mưa dập lửa**: giọt mưa trong |dx| < 12, từ đầu tới chân → `douse()`: tắt ngay, `sfx('hiss')` + 3 vòng hơi nước; miễn bắt lây 4s (tự tắt: 3s). Đo: mưa ngay trên đầu → tắt sau ~0,8s (thời gian giọt rơi từ mây).
 - **Đen**: bắt lửa → `soot = 1` (phấn, mũ, mặt chuyển đen, mắt vẫn trắng); giữ `SOOT_HOLD = 6`s sau khi tắt rồi phai về màu thường trong 2s.
 - Tiếng lửa liên tục tính cả người đang cháy: `min(3, số đám lửa + ceil(số người cháy / 2))`.
@@ -117,6 +117,15 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 - **Đi ngủ** (khi `k > 0.8`): mỗi người đi bộ, không bận, không cháy có 25%/đêm là "cú đêm" thức đi dạo; còn lại mỗi giây 25% cơ hội ngáp 1,3s (`yawn`, miệng mở) rồi nằm nghiêng ngủ (mắt nhắm, chữ z bay lên). Đo: sau 12s đêm 17/25 người ngủ, 6 cú đêm. Người ngủ không bị trèo đầu, không bị đáp lên. **Chạm người ngủ → dậy** (nhảy như bị chạm). Bị cháy/bò húc/rơi → dậy.
 - **Gấu** đi ngủ khi trời tối (nếu không có người cháy gần), dậy khi trời sáng.
 - **Sáng lại**: chạm mặt trăng, hoặc tự động sau 90s đêm. Bình minh 6s, tiếng `dawn` (hợp âm + chim hót); người ngủ lần lượt dậy (~1,2/s mỗi người), đom đóm tắt.
+
+## Máy bay thả dù (thêm 2026-10-23, v1.4.0) — `plane.js`
+- **Lượt bay**: lần đầu sau 50–70s, sau đó mỗi 120–180s; bay ngang trời (y 60–110) 120 px/s từ mép này sang mép kia (~15s ở WW=1600). Trước khi bay chọn sẵn 5–10 điểm x trong [120, WW−120]; bay qua điểm nào thả 1 thùng (`sfx('chute')`). Tiếng ù nhỏ `plane` lặp mỗi 2,8s khi còn trên màn. Đêm: đèn đỏ/xanh nhấp nháy.
+- **Chạm máy bay** (khung ±62×±30): lắc cánh + thả thêm 1 thùng, tối đa 3 mỗi lượt. Trần `pln_MAX = 14` thùng cùng lúc.
+- **Thùng** (`Crate`): thùng gỗ treo dù hồng, bọc bong bóng r=24, mặt thùng vẽ icon quà. Rơi `airStep` trọng lực 120, trần 38 px/s, đung đưa ngang (~17s từ trời xuống đất); rơi lên nét phấn thì nằm trên nét.
+- **Chạm thùng đang bay** (bong bóng + vùng dù) hoặc kéo nét qua → bong bóng vỡ, quà bung ra tại chỗ + 10 tia lấp lánh, `sfx('gift')`.
+- **Không chạm**: chạm mặt → bong bóng vỡ (`pop`), dù xẹp mờ 1s, thùng nằm lại. Người (không leo thang) đi vào thùng (|dx| < 16), hoặc bò/thú chạy qua, hoặc bé chạm thùng → mở. Không ai đụng 45s → tự mở. Nét đỡ mờ mất → thùng rơi.
+- **Quà** `CRATE_GIFTS` trọng số: dâu ×3 (bung **3 quả** `Item('berry')`), hạt ×2 (3 hạt fx `seed` → ụ hạt), nấm ×2, thang ×1, sao ×1 (`burst`). Không có lửa/thú trong thùng.
+- Đo (headless, WW=1600): lượt bay 16s thả 5 thùng; chạm 1 thùng dâu → 3 quả rơi; 4 thùng còn lại chạm đất sau ~14,5s và được người đi ngang mở gần hết ngay; sau 10s không còn thùng.
 
 ## Chim
 - Đàn **7 chim** giấy (4 hồng `0xffa6d2`, 3 trắng) bám quanh tâm đàn `flock` (điểm đến ngẫu nhiên, tốc 95 px/s; mỗi chim lắc sin quanh chỗ mình trong đàn, tốc tối đa 150).
@@ -164,6 +173,7 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Chạm mặt trời | `sun` — hợp âm C5-E5-G5-B5 (「サンサン」) |
 | Người xoay trong nắng | `spin` — 6 nốt nhanh (「くるくる」) |
 | Chim đậu/cất cánh | `chirp` |
+| Máy bay ù / dù bung / mở thùng quà | `plane` / `chute` / `gift` |
 | Vẽ nét | `chalk` — cộng mức phấn, tiếng do lớp liên tục |
 | Liên tục | Mưa rơi (theo số giọt), lửa cháy (theo số đám lửa + người đang cháy, tối đa 3), phấn cào bảng |
 | Nhạc nền | Hộp nhạc tự sinh: nốt ngũ cung C ngẫu nhiên mỗi 0,6–1,8s, rất nhẹ (bgmBus 0,22) |

@@ -41,7 +41,7 @@ class Person {
     if (this.state !== 'air') this.fly(0, -rand(300, 360));
   }
   get panic() { return this.burn >= BURN_BIG; }
-  ignite(p, spreads = 1) {                  // bắt lửa: chỉ mạnh lên, không yếu đi; spreads = số người còn lây được
+  ignite(p, spreads = people_spreads(p)) {  // bắt lửa: chỉ mạnh lên, không yếu đi; spreads = số người còn lây được
     if (p <= this.burn) return;
     this.spreads = spreads;
     if (this.burn <= 0) { this.idleT = this.spinT = this.yawnT = 0; this.sleep = false; this.helpT = 0.25; if (this.eat) { this.eat.taken = null; this.eat = null; this.eatT = 0; } }
@@ -53,7 +53,7 @@ class Person {
     sfx('hiss', this.x);
   }
   burning(dt) {
-    this.burn -= dt * (this.panic ? 0.05 : 0.15);      // cháy to ~9s mới nhỏ lại, cháy nhỏ ~3s tự tắt
+    this.burn -= dt * (this.panic ? 0.022 : 0.07);     // không có nước: cháy to ~20s mới nhỏ lại, cháy nhỏ ~8s tự tắt
     this.sootT = SOOT_HOLD;
     for (const d of drops)
       if (Math.abs(d.x - this.x) < 12 && d.y > this.y - 72 * this.s && d.y < this.y + 4) { this.douse(); return; }
@@ -63,10 +63,11 @@ class Person {
     if (!this.panic) return;
     if ((this.helpT -= dt) <= 0) { this.helpT = rand(1.6, 2.4); this.surpriseT = 0.7; sfx('help', this.x, { pitch: 2 - this.s }); }
     if (this.spreads <= 0) return;
-    for (const q of people) {                 // lây cho 1 người đứng sát / cùng tháp; người bị lây không lây tiếp
+    const r = 14 + 22 * this.burn;            // lửa càng to càng bén xa
+    for (const q of people) {                 // lây người đứng gần / cùng tháp; mỗi frame tối đa 1 người
       if (q === this || q.burn > 0 || q.immuneT > 0) continue;
-      if (q === this.rider || q === this.carrier || (Math.abs(q.x - this.x) < 14 && Math.abs(q.y - this.y) < 30)) {
-        q.ignite(this.burn * 0.8, 0); this.spreads--; return;
+      if (q === this.rider || q === this.carrier || (Math.abs(q.x - this.x) < r && Math.abs(q.y - this.y) < 30)) {
+        q.ignite(this.burn * 0.8); this.spreads--; return;
       }
     }
   }
@@ -146,7 +147,7 @@ class Person {
         if (Math.random() < 0.8) { this.detach(); this.state = 'climb'; this.ladder = it; this.x = it.x; sfx('climb', this.x); }
         return;
       }
-      if (it.type === 'mushroom' && Math.abs(it.x - this.x) < 12 * it.k) {
+      if (it.type === 'mushroom' && !it.air && Math.abs(it.x - this.x) < 12 * it.k) {
         it.squash = 1; sfx('boing', this.x); this.fly(this.dir * rand(40, 160), -rand(1050, 1250)); return;
       }
       if (it.type === 'berry' && Math.abs(it.x - this.x) < 8 && !it.taken) { this.startEat(it); return; }
@@ -235,11 +236,11 @@ class Person {
     const hx = this.x, hy = this.y - 42 * this.s;
     for (const it of items) {
       if (it.type === 'fire' && (it.state === 'fall' || it.state === 'live') && this.hotT <= 0
-          && Math.abs(it.x - this.x) < 22 && it.y - 44 < this.y && this.y < it.y + 30) {
+          && Math.abs(it.x - this.x) < 22 * it.fs && it.y - 44 * it.fs < this.y && this.y < it.y + 30) {
         const away = Math.sign(this.x - it.x) || -this.dir;
         this.dir = away; this.hotT = 1.1; this.surpriseT = 1;
         sfx('hot', this.x, { pitch: 2 - this.s });          // 「あちち」
-        this.ignite(rand(0.3, 1));                           // bắt lửa: ≥ BURN_BIG cháy to, dưới thì cháy nhỏ tự tắt
+        this.ignite(rand(0.6, 1));                           // bắt lửa: ≥ BURN_BIG cháy to, dưới thì cháy nhỏ tự tắt
         this.fly(away * rand(170, 250), -rand(380, 480)); return;
       }
       if (it.type === 'cow' && it.state === 'live' && !it.air && this.state !== 'air'
@@ -338,6 +339,10 @@ function drawPerson(g, p) {
     if (p.burn >= BURN_BIG) { people_flame(g, -8, -18, 9 * k, 20 * k); people_flame(g, 8, -22, 9 * k, 18 * k); }
   }
 }
+
+// số người còn lây được theo độ cháy: rất to (≥ 0,9) lây 3 người, cháy to lây 1, cháy nhỏ không lây.
+// Mỗi lần lây yếu đi ×0,8 nên chuỗi tự tắt sau vài đời: 1 → 0,8 → 0,64 → 0,51 (cháy nhỏ).
+function people_spreads(b) { return b >= 0.9 ? 3 : b >= BURN_BIG ? 1 : 0; }
 
 // ngọn lửa 3 lớp (đỏ/cam/vàng) đáy tại (x, y), cùng kiểu lửa của đồ vật
 function people_flame(g, x, y, w, h) {

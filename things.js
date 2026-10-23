@@ -1,8 +1,8 @@
 /* Bảng phấn tí hon — THINGS: đồ vật từ bong bóng (thang/nấm/lửa/bò/dâu + cá sấu/khỉ/gấu ở animals.js), bong bóng, đàn chim giấy.
  * Chỉ khai báo; mọi thứ Pixi/layer chỉ tồn tại sau boot(). */
 
-const ITEM_TYPES = ['ladder','ladder','mushroom','mushroom','fire','cow','croc','monkey','bear','star','berry','berry']; // có trọng số
-const LIFE = { ladder: 45, mushroom: 45, fire: 10, cow: 30, berry: 40, croc: 35, monkey: 30, bear: 35 };   // giây sau khi chạm đất
+const ITEM_TYPES = ['ladder','ladder','mushroom','mushroom','mushroom','fire','fire','cow','croc','monkey','bear','star','berry','berry']; // có trọng số
+const LIFE = { ladder: 45, mushroom: 45, fire: 30, cow: 30, berry: 40, croc: 35, monkey: 30, bear: 35 };   // giây sau khi chạm đất
 const ICON = { ladder: [0.3, 17], cow: [0.42, 10], mushroom: [0.55, 11], fire: [0.6, 12], star: [1, 0], berry: [1.25, 10], croc: [0.4, 6], monkey: [0.62, 13], bear: [0.42, 14] }; // [scale, dịch y] trong bong bóng
 
 class Item {                       // vật rơi ra từ bong bóng
@@ -15,6 +15,7 @@ class Item {                       // vật rơi ra từ bong bóng
     this.air = false; this.taken = null; this.dead = false;
     this.rot = type === 'ladder' ? rand(-0.5, 0.5) : 0;   // thang rơi nghiêng, chạm đất dựng thẳng
     this.h = 300; this.speed = rand(130, 170); this.fadeT = 0; this.redrawIn = 0;
+    this.fs = 0.9; this.hp = 1; this.hopT = rand(1, 3);   // lửa: cỡ lớn dần 0,9→1,7, hp giảm khi dính mưa; nấm: hẹn giờ tự nhún
     this.g = put(new PIXI.Graphics(), itemLayer);
     this.gl = type === 'fire' ? glow(0xff7a30) : null;
     if (ANIMALS[type]) ANIMALS[type].init(this);
@@ -39,12 +40,44 @@ class Item {                       // vật rơi ra từ bong bóng
     if (this.type === 'mushroom') this.k = Math.min(1, this.k + 2.5 * dt);
     if (this.type === 'cow') this.run(dt);
     else if (ANIMALS[this.type]) ANIMALS[this.type].update(this, dt);
+    else if (this.type === 'mushroom') this.hop(dt);
     else if (!settle(this)) { this.state = 'fall'; this.vy = 0; }   // nét đỡ mất thì rơi
     if (this.age > LIFE[this.type]) this.fade();
-    if (this.type === 'fire' && Math.random() < 14 * dt)
-      fx.push({ type: 'ember', x: this.x + rand(-8, 8), y: this.y - rand(10, 30), vy: -rand(40, 90), t: 0, life: rand(0.5, 0.9) });
+    if (this.type === 'fire') this.blaze(dt);
   }
   fade() { this.state = 'fade'; this.fadeT = 1.2; }
+  blaze(dt) {                      // lửa cháy to dần, lâu tắt; mưa rơi trúng thì nhỏ lại rồi tắt nhanh (~2s)
+    if (this.state !== 'live') return;
+    this.fs = Math.min(1.7, this.fs + 0.1 * dt);
+    let wet = 0;
+    for (const d of drops) if (Math.abs(d.x - this.x) < 26 * this.fs && d.y > this.y - 50 * this.fs && d.y < this.y + 4) wet++;
+    if (wet) {
+      this.hp -= wet * 0.12 * dt;
+      if (Math.random() < 6 * dt) fx.push({ type: 'pop', x: this.x + rand(-10, 10), y: this.y - rand(20, 50) * this.fs, r0: 3, t: 0, life: 0.45 });   // hơi nước
+      if (this.hp <= 0) { sfx('hiss', this.x); this.state = 'fade'; this.fadeT = 0.6; return; }
+    }
+    if (Math.random() < 14 * this.fs * this.hp * dt)
+      fx.push({ type: 'ember', x: this.x + rand(-12, 12) * this.fs, y: this.y - rand(10, 40) * this.fs, vy: -rand(40, 110), t: 0, life: rand(0.5, 1) });
+  }
+  hop(dt) {                        // nấm tự nhún nhảy cho nhộn nhịp; đáp xuống thì bật người đứng gần lên trời
+    if (this.air) {
+      if (airStep(this, dt, G_I, VT_I, 20)) {
+        this.air = false; this.vx = 0; this.squash = 1;
+        this.x = Math.round(this.x); this.y = Math.round(this.y);
+        for (const p of people)
+          if (p.state === 'walk' && !p.sleep && Math.abs(p.x - this.x) < 30 * this.k && Math.abs(p.y - this.y) < 10) {
+            sfx('boing', p.x); p.fly(Math.sign(p.x - this.x || 1) * rand(40, 140), -rand(900, 1150));
+          }
+      }
+      return;
+    }
+    if (!settle(this)) { this.state = 'fall'; this.vy = 0; return; }
+    if ((this.hopT -= dt) <= 0) {
+      this.hopT = rand(1.5, 3.5); this.squash = 1; sfx('boing', this.x);
+      if (Math.random() < 0.3) this.dir *= -1;
+      this.air = true; this.vy = -rand(260, 420); this.vx = this.dir * rand(20, 60);
+    }
+  }
   run(dt) {                        // con bò chạy lung tung trên nét
     if (this.air) {
       if (airStep(this, dt, G_I, VT_I, 30)) this.air = false;
@@ -68,7 +101,7 @@ class Item {                       // vật rơi ra từ bong bóng
     this.g.position.set(this.x, this.y); this.g.rotation = this.rot; this.g.alpha = a;
     if (this.type === 'mushroom') this.g.scale.set(this.k * (1 + 0.25 * this.squash), this.k * (1 - 0.35 * this.squash));
     else if (this.type === 'cow') this.g.scale.set(this.dir, 1);
-    else if (this.type === 'fire') this.g.scale.set(a);
+    else if (this.type === 'fire') this.g.scale.set(a * this.fs * (0.35 + 0.65 * this.hp));
     else if (ANIMALS[this.type]) {           // xoay/lật quanh giữa thân (nhào lộn, lật ngửa)
       this.g.pivot.set(0, -this.midY); this.g.position.set(this.x, this.y - this.midY + (this.sink || 0));
       this.g.scale.set(this.dir, this.flipY ? -1 : 1);
@@ -76,8 +109,8 @@ class Item {                       // vật rơi ra từ bong bóng
     if ((this.redrawIn -= dt) <= 0) { this.redrawIn = this.type === 'fire' ? 0.06 : 0.085; drawItem(this.g, this.type, this); }
     if (this.gl) {
       this.gl.visible = true;
-      this.gl.position.set(this.x, this.y - 18);
-      this.gl.scale.set(0.95 + Math.random() * 0.12);
+      this.gl.position.set(this.x, this.y - 18 * this.fs);
+      this.gl.scale.set((0.95 + Math.random() * 0.12) * this.fs * (0.35 + 0.65 * this.hp));
       this.gl.alpha = 0.5 * a;
     }
   }

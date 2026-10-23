@@ -19,11 +19,14 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 | Tap the moon | Morning comes and everyone wakes up. |
 | Tap a star | It bursts into sparkles and drops seeds. |
 | Tap a bubble | It pops and drops a ladder, mushroom (trampoline), fire, cow, crocodile, monkey, bear, berry or star. |
+| Tap a parachute | Every 2–3 minutes a plane flies over and drops 5–10 gift boxes on parachutes, each wrapped in a bubble. Tap one and the gift falls out: berries, seeds, a mushroom, a ladder or a star. Untapped boxes float down and wait on the ground until someone walks into them. Tap the plane for an extra box. |
 | Tap an animal | Crocodile rolls over giggling, monkey does a backflip, bear hugs the nearest person. |
 
-Fire: a person who touches fire catches it. A small fire burns out by itself. A big fire makes them cry for help and run toward the nearest cloud. Tap that cloud to make rain and put them out. Burned people turn black for a few seconds, then go back to normal. A big fire can spread to one person standing next to them.
+Fire: a person who touches fire catches it. A small fire burns out by itself. A big fire makes them cry for help and run toward the nearest cloud. Tap that cloud to make rain and put them out. Burned people turn black for a few seconds, then go back to normal. Fires are big and slow to go out without water (about half a minute); rain puts out a person instantly and a fire on the ground in a few seconds. A very big fire spreads to several people nearby, and they can pass it on.
 
 Day and night also change by themselves: night falls after about 2.5 minutes of play and morning returns about 90 seconds later. Tap a sleeping person to wake them.
+
+Mushrooms hop around by themselves and bounce anyone standing next to them when they land.
 
 Nature: rain runs downhill and pools. On flat ground it makes shallow puddles people splash through; draw a U-shaped line under a cloud and it fills into a pond. Well-watered clover blooms into flowers, butterflies come to rest on them, and people stop to sniff the flowers and sneeze.
 
@@ -49,6 +52,7 @@ The first run needs internet: PixiJS 8.6.6 loads from the jsDelivr CDN.
 | `animals.js` | Crocodile, monkey, bear |
 | `nature.js` | Rainbow, puddles, flowers, butterflies |
 | `night.js` | Day and night, moon, fireflies, sleeping |
+| `plane.js` | Plane and parachute gift boxes |
 | `sound.js` | All sounds, synthesized with Web Audio (no audio files) |
 | `archive/` | Early prototypes v1–v3 |
 | `docs/` | Analysis of the original artwork, specs, build contracts |

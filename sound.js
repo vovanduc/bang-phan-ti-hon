@@ -9,7 +9,7 @@ const SND = {
   bgmNext: 0,
 };
 
-const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120, rainbow: 3000, splash: 120, bloom: 150, achoo: 300, dusk: 2000, dawn: 2000, yawn: 500, cricket: 400 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
+const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120, rainbow: 3000, splash: 120, bloom: 150, achoo: 300, dusk: 2000, dawn: 2000, yawn: 500, cricket: 400, plane: 2800, chute: 150, gift: 120 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
 let snd_chalkLevel = 0, snd_chalkX = undefined;
 
 // ---------- helpers (chỉ dùng ctx + tham số) ----------
@@ -90,7 +90,7 @@ function snd_voice(ctx, out, t, syllables, gain) {
   return cur - t;
 }
 
-// ---------- 35 công thức sự kiện ----------
+// ---------- 38 công thức sự kiện ----------
 const SFX = {
   pop(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 900, f1: 200, slide: 0.06, dur: 0.09, gain: 0.45 });
@@ -301,6 +301,20 @@ const SFX = {
     for (let i = 0; i < 2; i++)
       snd_tone(ctx, out, t + i * 0.09, { f0: 2500, f1: 3800, slide: 0.06, dur: 0.06, gain: 0.05 });
     return 0.16;
+  },
+  plane(ctx, out, t) {                                  // máy bay: tiếng ù nhỏ, lên xuống êm (gọi lại mỗi 2,8s khi máy bay còn trên màn)
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.connect(out);
+    for (const f of [98, 101.5]) snd_tone(ctx, lp, t, { f0: f, type: 'sawtooth', dur: 3.1, attack: 1.1, gain: 0.05, nojit: true });
+    return 3.1;
+  },
+  chute(ctx, out, t) {                                  // dù bung: "phụp" mềm
+    snd_hitNoise(ctx, out, t, { dur: 0.22, bp: [700, 1.2], gain: 0.12 });
+    return snd_tone(ctx, out, t, { f0: 500, f1: 820, slide: 0.15, dur: 0.2, gain: 0.08 });
+  },
+  gift(ctx, out, t, o) {                                // mở thùng quà: pốp + 3 nốt đi lên
+    snd_tone(ctx, out, t, { f0: 700, f1: 260, slide: 0.05, dur: 0.08, gain: 0.3 });
+    [1047, 1319, 1568].forEach((f, i) => snd_tone(ctx, out, t + 0.06 + i * 0.07, { f0: f, type: 'triangle', dur: 0.3, gain: 0.1, verb: o.verb }));
+    return 0.5;
   },
 };
 

@@ -6,6 +6,19 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-23
+
+### Added
+- **Plane and parachutes**: every 2–3 minutes (first one after about a minute) a plane flies across the sky and drops 5–10 gift boxes on parachutes, each wrapped in a bubble with a picture of the gift. Tap a box and the bubble pops and the gift falls out: berries (three at once), seeds, a mushroom, a ladder or a star. Untapped boxes float down; the bubble pops on landing and the box waits until a person or animal walks into it (or opens by itself after 45 s). Tap the plane for up to 3 extra boxes.
+- Mushrooms hop around by themselves every few seconds and bounce nearby people into the air when they land.
+
+### Changed
+- Fire is bigger, grows over time and lasts 30 s instead of 10 s. Rain shrinks it and puts it out in about 3 s. It shows up twice as often in bubbles; mushrooms also show up more often.
+- People on fire burn about twice as long without water (big fire ~20 s, then small ~8 s). A very big fire spreads to up to 3 people nearby from a wider reach, and the chain weakens each time.
+
+### Removed
+- The "inspired by teamLab" link in the corner: small children kept tapping it and leaving the game. Credit stays in the README.
+
 ## [1.3.0] - 2026-10-14
 
 ### Added

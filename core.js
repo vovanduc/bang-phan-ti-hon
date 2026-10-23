@@ -2,7 +2,7 @@
  * Dựng lại cơ chế "A Blackboard where Little People Live" của teamLab bằng nét phấn tự vẽ.
  * File này: hằng số, helper, layer Pixi, mặt nạ va chạm + vật lý "đi trên nét vẽ", nét vẽ + input,
  * hạt hiệu ứng dùng chung, vòng lặp tick(), boot(), hook kiểm thử window.__bb.
- * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu) · nature.js (cầu vồng/vũng nước/hoa/bướm) · night.js (ngày/đêm, đom đóm, đi ngủ).
+ * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu) · nature.js (cầu vồng/vũng nước/hoa/bướm) · night.js (ngày/đêm, đom đóm, đi ngủ) · plane.js (máy bay thả thùng quà treo dù).
  * Classic script, chung global scope, nạp theo thứ tự trong index.html.
  */
 
@@ -51,10 +51,10 @@ function glow(tint) {
 }
 
 // ===== State dùng chung =====
-const people = [], items = [], seeds = [], clovers = [], stars = [], clouds = [], bubbles = [], lines = [], birds = [], fx = [], drops = [], puddles = [], butterflies = [], fireflies = [];
+const people = [], items = [], seeds = [], clovers = [], stars = [], clouds = [], bubbles = [], lines = [], birds = [], fx = [], drops = [], puddles = [], butterflies = [], fireflies = [], crates = [];
 const strokes = new Map();                // pointerId → Line đang vẽ
 let WW = 1600, K = 1, MW = 0, mask = new Uint8Array(0), MAXP = 30, MAXB = 3;
-let sun = null, rainbow = null, night = null, maskDirty = false, cloverDirty = true, cloverIn = 0, spawnCD = 0, bubbleCD = 1, starCD = 2;
+let sun = null, rainbow = null, night = null, plane = null, maskDirty = false, cloverDirty = true, cloverIn = 0, spawnCD = 0, bubbleCD = 1, starCD = 2;
 
 // ===== Mặt nạ va chạm: 1 byte / pixel thế giới; nét vẽ được "đóng dấu" vào đây =====
 function solid(x, y) {
@@ -162,6 +162,7 @@ function removeLine(l) { l.dead = true; l.g.destroy(); lines.splice(lines.indexO
 function toWorld(e) { const r = app.canvas.getBoundingClientRect(); return [(e.clientX - r.left) / K, (e.clientY - r.top) / K]; }
 function tapAt(x, y) {
   for (const b of bubbles) if (!b.dead && Math.hypot(b.x - x, b.y - y) < b.r + 10) { b.pop(); return true; }
+  if (planeTap(x, y)) return true;                     // thùng quà treo dù / máy bay
   for (const s of stars) if (Math.hypot(s.x - x, s.y - y) < 26) { burst(s.x, s.y, s.color, s); return true; }
   // thú (thân to) trước người: bé chạm cá sấu/khỉ/gấu thì trúng thú dù có người đi ngang
   for (const it of items) if (it.hitW && it.state === 'live' && Math.abs(it.x - x) < it.hitW && y > it.y - it.hitH && y < it.y + 8) { it.tap(); return true; }
@@ -188,6 +189,7 @@ function onMove(e) {
     if (!l.add(x, y)) continue;
     sfx('chalk', x);                                    // tiếng phấn cào bảng theo tốc độ vẽ
     for (const b of bubbles) if (!b.dead && Math.hypot(b.x - x, b.y - y) < b.r) b.pop();
+    planeSwipe(x, y);
   }
 }
 function onUp(e) {
@@ -228,7 +230,7 @@ function layout() {
   makeBoard();
   groundG.clear().moveTo(0, GY + 2).lineTo(WW, GY + 2).stroke(chalk(12, 0.14)).moveTo(0, GY + 2).lineTo(WW, GY + 2).stroke(chalk(5, 0.95));
   if (sun) sun.x = WW - 150;
-  for (const e of [...people, ...items, ...seeds]) { e.x = Math.round(clamp(e.x, EDGE, WW - EDGE)); if (e.y > GY - 1) e.y = GY - 1; }
+  for (const e of [...people, ...items, ...seeds, ...crates]) { e.x = Math.round(clamp(e.x, EDGE, WW - EDGE)); if (e.y > GY - 1) e.y = GY - 1; }
   for (const e of [...stars, ...bubbles, ...clouds]) e.x = clamp(e.x, 40, WW - 40);
   flock.tx = clamp(flock.tx, 120, WW - 120);
 }
@@ -318,6 +320,9 @@ function tick(dt) {
   if (bubbles.length < MAXB && (bubbleCD -= dt) <= 0) { bubbleCD = rand(3, 6); bubbles.push(new Bubble()); }
   for (const it of items) it.update(dt);
   sweep(items);
+  plane.update(dt);
+  for (const c of crates) c.update(dt);
+  sweep(crates);
   for (const s of seeds) s.update(dt);
   sweep(seeds);
   ageClovers(dt);
@@ -340,6 +345,8 @@ function tick(dt) {
   for (const s of stars) s.render(dt);
   for (const b of bubbles) b.render(dt);
   for (const it of items) it.render(dt);
+  for (const c of crates) c.render(dt);
+  plane.render(dt);
   for (const s of seeds) s.render(dt);
   for (const p of people) p.render(dt);
   for (const b of butterflies) b.render(dt);
@@ -378,6 +385,7 @@ async function boot() {
   sun = makeSun();
   rainbow = makeRainbow();
   night = makeNight();
+  plane = makePlane();
   // cảnh mở đầu như bản gốc lúc chưa ai chạm: người đi trên nét đất, vài ụ hạt, cỏ, mây, sao, bong bóng, đàn chim
   for (let i = 0; i < 3; i++) clouds.push(new Cloud(WW * (0.18 + i * 0.3) + rand(-60, 60), rand(85, 185)));
   for (let i = 0; i < 9; i++) stars.push(new Star(...skySpot()));
@@ -397,10 +405,11 @@ async function boot() {
 
 // Hook kiểm thử: tab ẩn → rAF dừng, phải bơm tick tay (gotcha demo 2026-07-27)
 window.__bb = {
-  people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops, puddles, butterflies, fireflies, GY,
+  people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops, puddles, butterflies, fireflies, crates, GY,
   get rainbow() { return rainbow; },
   get night() { return night; },
   get sun() { return sun; },
+  get plane() { return plane; },
   get WW() { return WW; },
   step(n = 1) { for (let i = 0; i < n; i++) tick(1 / 60); app.render(); },
   tap: (x, y) => tapAt(x, y),
