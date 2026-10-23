@@ -12,7 +12,7 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 | Do this | What happens |
 |---|---|
 | Drag on the board | Draw a chalk line. People walk on it, climb gentle slopes, turn at steep walls, fall off the ends. Lines fade after 60 s. |
-| Tap a person | They jump and say "ouch". |
+| Tap a person | They jump and say "ouch". A sleeping person wakes up. |
 | Tap a cloud | It rains. Rain grows clover, flowers and berry bushes, and collects in puddles. |
 | Tap the sun | A sunbeam makes people in it spin and glow. Sun and rain together make a rainbow people can walk over. |
 | Press and hold the sun | Night falls: the board turns dark blue, the moon comes out, fireflies glow, crickets chirp, and most people yawn and lie down to sleep. |
@@ -22,15 +22,20 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 | Tap a parachute | Every 2–3 minutes a plane flies over and drops 5–10 gift boxes on parachutes, each wrapped in a bubble. Tap one and the gift falls out: berries, seeds, a mushroom, a ladder or a star. Untapped boxes float down and wait on the ground until someone walks into them. Tap the plane for an extra box. |
 | Tap an animal | Crocodile rolls over giggling, monkey does a backflip, bear hugs the nearest person. |
 
-Fire: a person who touches fire catches it. A small fire burns out by itself. A big fire makes them cry for help and run toward the nearest cloud. Tap that cloud to make rain and put them out. Burned people turn black for a few seconds, then go back to normal. Fires are big and slow to go out without water (about half a minute); rain puts out a person instantly and a fire on the ground in a few seconds. A very big fire spreads to several people nearby, and they can pass it on.
+## What else happens
+**People** walk, stop to look around, turn back at walls and climb on each other into towers up to 5 high. They eat ripe berries (hearts float up), get launched by mushrooms, climb ladders, and burst stars when they jump high enough. A paper-bird flock lands on chalk lines to rest.
 
-Day and night also change by themselves: night falls after about 2.5 minutes of play and morning returns about 90 seconds later. Tap a sleeping person to wake them.
+**Fire**: a person who touches fire catches it and turns black. A small fire burns out by itself. A big fire makes them cry for help ("cứu! cứu!") and run toward water: a raining cloud, a puddle or the crocodile, otherwise the nearest cloud. Without water a big fire lasts about half a minute; rain puts a person out instantly and a fire on the ground in about 3 s. A very big fire spreads to people nearby, who pass it on more weakly. Nobody gets hurt; burned people turn back to normal a few seconds after the fire is out.
 
-Mushrooms hop around by themselves and bounce anyone standing next to them when they land.
+**Mushrooms** hop around by themselves and bounce anyone standing next to them when they land.
 
-Nature: rain runs downhill and pools. On flat ground it makes shallow puddles people splash through; draw a U-shaped line under a cloud and it fills into a pond. Well-watered clover blooms into flowers, butterflies come to rest on them, and people stop to sniff the flowers and sneeze.
+**Plane**: the first one comes after about a minute, then every 2–3 minutes. Gift boxes that land on the ground open when a person or animal walks into them, or by themselves after 45 s.
 
-Animals: the **crocodile** carries people on its back, snaps at the air, and sprays water on anyone on fire, and swims in big puddles. The **monkey** picks berries and throws them to people, and races up ladders to leap at the stars. The **bear** lets people stack on its head, eats a whole berry bush and falls asleep (its belly becomes a trampoline), and stomps out fires.
+**Day and night** also change by themselves: night falls after about 2.5 minutes of play and morning returns about 90 seconds later.
+
+**Nature**: rain runs downhill and pools. On flat ground it makes shallow puddles people splash through; draw a U-shaped line under a cloud and it fills into a pond. Well-watered clover blooms into flowers, butterflies come to rest on them, and people stop to sniff the flowers and sneeze.
+
+**Animals**: the **crocodile** carries people on its back, snaps at the air, and sprays water on anyone on fire, and swims in big puddles. The **monkey** picks berries and throws them to people, and races up ladders to leap at the stars. The **bear** lets people stack on its head, eats a whole berry bush and falls asleep (its belly becomes a trampoline), and stomps out fires.
 
 🔊 Sound starts after the first tap (browser rule). The speaker button bottom-left mutes it.
 
@@ -39,6 +44,18 @@ Animals: the **crocodile** carries people on its back, snaps at the air, and spr
 - `python3 -m http.server 8765`, then open http://127.0.0.1:8765/
 
 The first run needs internet: PixiJS 8.6.6 loads from the jsDelivr CDN.
+
+## Versions
+Full notes: [CHANGELOG.md](CHANGELOG.md) · downloads: [GitHub releases](https://github.com/vovanduc/tiny-chalk-people/releases).
+
+| Version | Date | Highlights |
+|---|---|---|
+| [1.4.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.4.0) | 2026-10-23 | Plane drops parachute gift boxes; bigger, longer fires that rain puts out and that spread to many people; hopping mushrooms; corner link removed so toddlers don't leave the game |
+| [1.3.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.3.0) | 2026-10-14 | Day and night: moon, fireflies, crickets, people and bear go to sleep |
+| [1.2.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.2.0) | 2026-10-13 | Rainbow bridge, puddles and ponds, flowers, butterflies |
+| [1.1.1](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.1.1) | 2026-10-13 | Versioned script URLs so browsers never mix cached files |
+| [1.1.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.1.0) | 2026-10-13 | Crocodile, monkey, bear; people catch fire and run to the rain |
+| [1.0.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.0.0) | 2026-10-13 | First public release: chalk lines, people, towers, stars, rain, berries, sun, bubbles, birds, synthesized sound |
 
 ## Project layout
 | Path | Contents |
