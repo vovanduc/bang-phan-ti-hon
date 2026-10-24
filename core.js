@@ -2,7 +2,7 @@
  * Dựng lại cơ chế "A Blackboard where Little People Live" của teamLab bằng nét phấn tự vẽ.
  * File này: hằng số, helper, layer Pixi, mặt nạ va chạm + vật lý "đi trên nét vẽ", nét vẽ + input,
  * hạt hiệu ứng dùng chung, vòng lặp tick(), boot(), hook kiểm thử window.__bb.
- * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu) · nature.js (cầu vồng/vũng nước/hoa/bướm) · night.js (ngày/đêm, đom đóm, đi ngủ) · plane.js (máy bay thả thùng quà treo dù).
+ * Entity: people.js (Person) · sky.js (mây/mưa/sao/mặt trời) · ground.js (cỏ ba lá/hạt/cây dâu) · things.js (bong bóng/đồ vật/chim) · animals.js (cá sấu/khỉ/gấu) · nature.js (cầu vồng/vũng nước/hoa/bướm) · night.js (ngày/đêm, đom đóm, đi ngủ) · plane.js (máy bay thả thùng quà treo dù) · santa.js (ông già Noel, pháo bông).
  * Classic script, chung global scope, nạp theo thứ tự trong index.html.
  */
 
@@ -18,7 +18,7 @@ const BODY_H = 50, HEAD_TOP = 51, MAX_TOWER = 5;
 const G_P = 1100, VT_P = 420;             // trọng lực + vận tốc rơi tối đa của người (rơi bồng bềnh)
 const G_I = 1400, VT_I = 900;             // của đồ vật
 const LINE_LIFE = 60, LR = 3, MAX_LINES = 24;   // nét sống 60s rồi mờ; bán kính va chạm 3px (dải 7px)
-const MAX_ITEMS = 10, MAX_SEEDS = 14, MAX_CLOVERS = 160, MAX_STARS = 16, MIN_STARS = 7;
+const MAX_ITEMS = 16, MAX_SEEDS = 14, MAX_CLOVERS = 160, MAX_STARS = 16, MIN_STARS = 7;
 const MAX_PUDDLES = 10, MAX_BUTTERFLIES = 6, MAX_FIREFLIES = 14;
 const BEAM = 260;                         // nửa bề rộng vệt nắng ở mặt đất
 const BERRY_AT = [[-13, 0.45], [12, 0.55], [0, 0.75]];   // slot quả dâu: [dx, tỷ lệ chiều cao cây 56px]
@@ -54,7 +54,7 @@ function glow(tint) {
 const people = [], items = [], seeds = [], clovers = [], stars = [], clouds = [], bubbles = [], lines = [], birds = [], fx = [], drops = [], puddles = [], butterflies = [], fireflies = [], crates = [];
 const strokes = new Map();                // pointerId → Line đang vẽ
 let WW = 1600, K = 1, MW = 0, mask = new Uint8Array(0), MAXP = 30, MAXB = 3;
-let sun = null, rainbow = null, night = null, plane = null, maskDirty = false, cloverDirty = true, cloverIn = 0, spawnCD = 0, bubbleCD = 1, starCD = 2;
+let sun = null, rainbow = null, night = null, plane = null, santa = null, maskDirty = false, cloverDirty = true, cloverIn = 0, spawnCD = 0, bubbleCD = 1, starCD = 2;
 
 // ===== Mặt nạ va chạm: 1 byte / pixel thế giới; nét vẽ được "đóng dấu" vào đây =====
 function solid(x, y) {
@@ -162,7 +162,8 @@ function removeLine(l) { l.dead = true; l.g.destroy(); lines.splice(lines.indexO
 function toWorld(e) { const r = app.canvas.getBoundingClientRect(); return [(e.clientX - r.left) / K, (e.clientY - r.top) / K]; }
 function tapAt(x, y) {
   for (const b of bubbles) if (!b.dead && Math.hypot(b.x - x, b.y - y) < b.r + 10) { b.pop(); return true; }
-  if (planeTap(x, y)) return true;                     // thùng quà treo dù / máy bay
+  if (planeTap(x, y)) return true;                     // thùng quà treo dù / hộp quà Noel / máy bay
+  if (santaTap(x, y)) return true;                     // xe trượt, toa quà, tuần lộc
   for (const s of stars) if (Math.hypot(s.x - x, s.y - y) < 26) { burst(s.x, s.y, s.color, s); return true; }
   // thú (thân to) trước người: bé chạm cá sấu/khỉ/gấu thì trúng thú dù có người đi ngang
   for (const it of items) if (it.hitW && it.state === 'live' && Math.abs(it.x - x) < it.hitW && y > it.y - it.hitH && y < it.y + 8) { it.tap(); return true; }
@@ -321,6 +322,7 @@ function tick(dt) {
   for (const it of items) it.update(dt);
   sweep(items);
   plane.update(dt);
+  santa.update(dt);
   for (const c of crates) c.update(dt);
   sweep(crates);
   for (const s of seeds) s.update(dt);
@@ -347,6 +349,7 @@ function tick(dt) {
   for (const it of items) it.render(dt);
   for (const c of crates) c.render(dt);
   plane.render(dt);
+  santa.render(dt);
   for (const s of seeds) s.render(dt);
   for (const p of people) p.render(dt);
   for (const b of butterflies) b.render(dt);
@@ -386,6 +389,7 @@ async function boot() {
   rainbow = makeRainbow();
   night = makeNight();
   plane = makePlane();
+  santa = makeSanta();
   // cảnh mở đầu như bản gốc lúc chưa ai chạm: người đi trên nét đất, vài ụ hạt, cỏ, mây, sao, bong bóng, đàn chim
   for (let i = 0; i < 3; i++) clouds.push(new Cloud(WW * (0.18 + i * 0.3) + rand(-60, 60), rand(85, 185)));
   for (let i = 0; i < 9; i++) stars.push(new Star(...skySpot()));
@@ -410,6 +414,7 @@ window.__bb = {
   get night() { return night; },
   get sun() { return sun; },
   get plane() { return plane; },
+  get santa() { return santa; },
   get WW() { return WW; },
   step(n = 1) { for (let i = 0; i < n; i++) tick(1 / 60); app.render(); },
   tap: (x, y) => tapAt(x, y),

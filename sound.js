@@ -9,7 +9,7 @@ const SND = {
   bgmNext: 0,
 };
 
-const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120, rainbow: 3000, splash: 120, bloom: 150, achoo: 300, dusk: 2000, dawn: 2000, yawn: 500, cricket: 400, plane: 2800, chute: 150, gift: 120 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
+const snd_THROTTLE = { pop: 40, burst: 150, seed: 80, sprout: 100, clover: 120, eat: 150, boing: 60, ouch: 0, hot: 80, bonk: 60, moo: 2500, land: 60, climb: 150, hop: 90, stack: 700, rain: 300, sun: 500, spin: 90, chirp: 120, help: 300, hiss: 150, chomp: 200, spray: 300, giggle: 400, ook: 250, grunt: 400, thud: 120, rainbow: 3000, splash: 120, bloom: 150, achoo: 300, dusk: 2000, dawn: 2000, yawn: 500, cricket: 400, plane: 2800, chute: 150, gift: 120, jingle: 1700, hoho: 2500, fuse: 500, fwLaunch: 40, fwBoom: 30, fwCrackle: 250 }; // stack: đo được ~3 lần/s khi chơi thật → giãn còn ≤1,4/s
 let snd_chalkLevel = 0, snd_chalkX = undefined;
 
 // ---------- helpers (chỉ dùng ctx + tham số) ----------
@@ -90,7 +90,7 @@ function snd_voice(ctx, out, t, syllables, gain) {
   return cur - t;
 }
 
-// ---------- 38 công thức sự kiện ----------
+// ---------- 44 công thức sự kiện ----------
 const SFX = {
   pop(ctx, out, t) {
     snd_tone(ctx, out, t, { f0: 900, f1: 200, slide: 0.06, dur: 0.09, gain: 0.45 });
@@ -310,6 +310,44 @@ const SFX = {
   chute(ctx, out, t) {                                  // dù bung: "phụp" mềm
     snd_hitNoise(ctx, out, t, { dur: 0.22, bp: [700, 1.2], gain: 0.12 });
     return snd_tone(ctx, out, t, { f0: 500, f1: 820, slide: 0.15, dur: 0.2, gain: 0.08 });
+  },
+  jingle(ctx, out, t) {                                 // chuông xe trượt: 2 nhịp lắc, mỗi nhịp 1 chùm chuông kim loại
+    for (const st of [0, 0.28]) {
+      for (let i = 0; i < 5; i++) snd_tone(ctx, out, t + st + i * 0.018 + Math.random() * 0.02, { f0: rand(3200, 5400), type: 'triangle', dur: 0.22, gain: 0.022 });
+      snd_hitNoise(ctx, out, t + st, { dur: 0.06, hp: 6000, gain: 0.03 });
+    }
+    return 0.6;
+  },
+  hoho(ctx, out, t) {                                   // "hô hô hô" giọng trầm ông già Noel
+    for (let i = 0; i < 3; i++) {
+      const at = t + i * 0.3;
+      snd_hitNoise(ctx, out, at - 0.04, { dur: 0.05, hp: 1200, gain: 0.05 });   // hơi thở "h"
+      snd_voice(ctx, out, at, [{ f: 150 - i * 8, v: 'o', d: 0.2, glide: 0.85 }], 0.3);
+    }
+    return 1;
+  },
+  fuse(ctx, out, t) {                                   // ngòi cháy xì xì
+    snd_hitNoise(ctx, out, t, { dur: 1.2, hp: 3500, gain: 0.05 });
+    for (let i = 0; i < 8; i++) snd_hitNoise(ctx, out, t + Math.random() * 1.1, { dur: 0.01, bp: [rand(3000, 6000), 3], gain: 0.05 });
+    return 1.2;
+  },
+  fwLaunch(ctx, out, t, o) {                            // tên lửa rời ống: "bụp" + đôi khi tiếng huýt bay lên
+    snd_hitNoise(ctx, out, t, { dur: 0.12, lp: 600, gain: 0.22 });
+    snd_tone(ctx, out, t, { f0: 180, f1: 70, slide: 0.1, dur: 0.12, gain: 0.18 });
+    if (o.whistle) { snd_tone(ctx, out, t + 0.05, { f0: 900, f1: 2400, slide: 1.1, dur: 1.15, attack: 0.08, gain: 0.03 }); return 1.2; }
+    return 0.15;
+  },
+  fwBoom(ctx, out, t, o) {                              // tiếng nổ: tiếng "đét" + thân nổ trầm + tiếng dội, tới trễ 0,05–0,15s như ở xa
+    const s = o.size || 1, at = t + (o.delay || 0);
+    snd_hitNoise(ctx, out, at, { dur: 0.06, hp: 900, gain: 0.3 * s });
+    snd_hitNoise(ctx, out, at, { dur: 1.9, lp: 320, gain: 0.34 * s });
+    snd_hitNoise(ctx, out, at, { dur: 0.5, lp: 1600, gain: 0.16 * s });
+    snd_tone(ctx, out, at, { f0: 85, f1: 32, slide: 0.5, dur: 0.9, gain: 0.32 * s, verb: o.verb, verbGain: 0.8 });
+    return (o.delay || 0) + 1.9;
+  },
+  fwCrackle(ctx, out, t) {                              // lách tách kim tuyến sau tiếng nổ
+    for (let i = 0; i < 36; i++) snd_hitNoise(ctx, out, t + 0.25 + Math.random() * 1.3, { dur: 0.008, bp: [rand(2500, 6500), 3], gain: rand(0.03, 0.09) });
+    return 1.6;
   },
   gift(ctx, out, t, o) {                                // mở thùng quà: pốp + 3 nốt đi lên
     snd_tone(ctx, out, t, { f0: 700, f1: 260, slide: 0.05, dur: 0.08, gain: 0.3 });

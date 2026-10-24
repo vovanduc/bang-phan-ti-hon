@@ -3,7 +3,7 @@
 
 const ITEM_TYPES = ['ladder','ladder','mushroom','mushroom','mushroom','fire','fire','cow','croc','monkey','bear','star','berry','berry']; // có trọng số
 const LIFE = { ladder: 45, mushroom: 45, fire: 30, cow: 30, berry: 40, croc: 35, monkey: 30, bear: 35 };   // giây sau khi chạm đất
-const ICON = { ladder: [0.3, 17], cow: [0.42, 10], mushroom: [0.55, 11], fire: [0.6, 12], star: [1, 0], berry: [1.25, 10], croc: [0.4, 6], monkey: [0.62, 13], bear: [0.42, 14] }; // [scale, dịch y] trong bong bóng
+const ICON = { ladder: [0.3, 17], cow: [0.42, 10], mushroom: [0.55, 11], fire: [0.6, 12], star: [1, 0], berry: [1.25, 10], croc: [0.4, 6], monkey: [0.62, 13], bear: [0.42, 14], firework: [0.7, 14] }; // [scale, dịch y] trong bong bóng
 
 class Item {                       // vật rơi ra từ bong bóng
   constructor(type, x, y) {
@@ -19,8 +19,9 @@ class Item {                       // vật rơi ra từ bong bóng
     this.g = put(new PIXI.Graphics(), itemLayer);
     this.gl = type === 'fire' ? glow(0xff7a30) : null;
     if (ANIMALS[type]) ANIMALS[type].init(this);
+    if (type === 'firework') fwInit(this);              // santa.js
   }
-  tap() { if (ANIMALS[this.type]) ANIMALS[this.type].tap(this); }
+  tap() { if (this.type === 'firework') fwLight(this); else if (ANIMALS[this.type]) ANIMALS[this.type].tap(this); }
   update(dt) {
     this.age += dt; this.anim += dt; this.squash *= Math.exp(-7 * dt);
     if (this.state === 'fall') {
@@ -41,6 +42,7 @@ class Item {                       // vật rơi ra từ bong bóng
     if (this.type === 'cow') this.run(dt);
     else if (ANIMALS[this.type]) ANIMALS[this.type].update(this, dt);
     else if (this.type === 'mushroom') this.hop(dt);
+    else if (this.type === 'firework') fwUpdate(this, dt);
     else if (!settle(this)) { this.state = 'fall'; this.vy = 0; }   // nét đỡ mất thì rơi
     if (this.age > LIFE[this.type]) this.fade();
     if (this.type === 'fire') this.blaze(dt);
@@ -161,13 +163,15 @@ function drawItem(g, type, it) {
     ANIMALS[type].draw(g, it);
   } else if (type === 'berry') {
     drawBerry(g, 0, -17, 1);           // hàm của ground.js
+  } else if (type === 'firework') {
+    fwDraw(g, it);
   } else if (type === 'star') {
     g.star(0, 0, 5, 12, 6, 0).stroke({ width: 2.4, color: 0xffe45c, join: 'round' });
   }
 }
 
-function trimItems() {                 // quá MAX_ITEMS → vật cũ nhất mờ dần
-  const live = items.filter(i => i.state !== 'fade');
+function trimItems() {                 // quá MAX_ITEMS → vật cũ nhất mờ dần; pháo bông không bị ép mờ (tự mờ khi bắn xong)
+  const live = items.filter(i => i.state !== 'fade' && i.type !== 'firework');
   for (let i = 0; i < live.length - MAX_ITEMS; i++) live[i].fade();
 }
 

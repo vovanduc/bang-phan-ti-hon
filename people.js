@@ -16,6 +16,7 @@ class Person {
     this.carrier = null; this.rider = null; this.ox = 0;
     this.ladder = null; this.seen = null; this.bumpCD = rand(0, 2);
     this.sleep = false; this.yawnT = 0;      // đêm: ngáp rồi nằm ngủ (night.js)
+    this.scareT = 0;                          // pháo bông nổ gần: sợ ồn chạy tán loạn (santa.js)
     this.burn = 0; this.spreads = 0; this.soot = 0; this.sootT = 0; this.immuneT = 0; this.helpT = 0; this.seekCD = 0;   // cháy: độ cháy 0–1, độ đen 0–1
     this.g = put(new PIXI.Graphics(), peopleLayer);
     this.g.pivot.set(0, -30);                 // xoay quanh giữa thân, chân vẫn ở (x, y)
@@ -106,7 +107,7 @@ class Person {
   }
 
   update(dt) {
-    this.bumpCD -= dt; this.hotT -= dt; this.surpriseT -= dt; this.glowT -= dt; this.immuneT -= dt; this.seekCD -= dt;
+    this.bumpCD -= dt; this.hotT -= dt; this.surpriseT -= dt; this.glowT -= dt; this.immuneT -= dt; this.seekCD -= dt; this.scareT -= dt;
     if (this.burn > 0) this.burning(dt);
     else if (this.soot > 0 && (this.sootT -= dt) <= 0) this.soot = Math.max(0, this.soot - dt / 2);
     if (this.spinT > 0) this.spinT -= dt;
@@ -122,21 +123,25 @@ class Person {
 
   walk(dt) {
     if (!settle(this)) { this.fly(this.dir * this.speed * 0.5, 0); return; }   // nét dưới chân mất
-    const panic = this.panic;
-    if (this.busy && !panic) {
+    const panic = this.panic, scared = this.scareT > 0;
+    if (scared && !panic) {                     // chạy tán loạn, giơ tay, đổi hướng lung tung
+      this.idleT = 0; this.surpriseT = Math.max(this.surpriseT, 0.2);
+      if (Math.random() < 1.2 * dt) this.dir *= -1;
+    }
+    if (this.busy && !panic && !scared) {
       if (this.idleT > 0) { this.idleT -= dt; if (this.idleT <= 0 && Math.random() < 0.3) this.dir *= -1; }
       return;
     }
     if (panic) { if (this.seekCD <= 0) this.seekWater(); }
-    else if ((this.nextIdle -= dt) <= 0) { this.idleT = rand(0.7, 2.5); this.nextIdle = rand(5, 14); return; }
-    this.acc += this.speed * (panic ? 2.2 : 1) * dt;
+    else if (!scared && (this.nextIdle -= dt) <= 0) { this.idleT = rand(0.7, 2.5); this.nextIdle = rand(5, 14); return; }
+    this.acc += this.speed * (panic ? 2.2 : scared ? 2.4 : 1) * dt;
     while (this.acc >= 1) {
       this.acc -= 1;
       const r = walkStep(this, STEP_UP, BODY_H * this.s);   // mép màn: walkStep trả 'wall', không tự xử lý
       if (r === 'wall') { this.dir *= -1; this.acc = 0; this.seekCD = 1.5; break; }
       if (r === 'fall') { this.fly(this.dir * this.speed, 0); return; }
     }
-    if (!panic) this.look();
+    if (!panic && !scared) this.look();
   }
 
   look() {

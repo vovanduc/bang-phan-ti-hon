@@ -6,6 +6,20 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-24
+
+### Added
+- **Santa**: about two minutes in, then every 4–6 minutes, Santa flies across below the clouds in a red sleigh pulled by four reindeer (red-nosed Rudolph in front), towing 5–10 gift wagons. Sleigh bells jingle and he calls "ho ho ho".
+- Each wagon drops 3–5 presents wrapped in bubbles. A present can hold anything a bubble holds (ladder, mushroom, fire, cow, crocodile, monkey, bear, berry, star). Tap a falling present to open it; presents that land wait until a person or animal walks into them.
+- Tap the sleigh for up to 3 extra presents, tap a wagon to make it drop a present now, tap the reindeer to flash Rudolph's nose. At night Rudolph's nose and the sleigh lantern glow.
+- **Fireworks**: every Santa trip brings at least one firework box. Tap it, or let a person or animal bump into it, and it fires 28–40 rockets plus a finale, bursting below the clouds as round bursts, rings, hearts, stars, smiley faces, golden willows, splitting crossettes and two-colour shells. Tap it while it fires for an extra rocket.
+- Firework sounds: launch thump with occasional whistle, a deep boom that arrives a moment after the flash, and crackling glitter.
+- Daytime bursts leave drifting smoke; night bursts glow, flash the sky and glitter, and wake sleepers nearby.
+- Nearby people react to fireworks: some stop and watch with raised arms, others get scared by the noise and run around.
+
+### Changed
+- Up to 16 items can be on the board at once (was 10), so Santa's presents don't vanish as soon as they open. Firework boxes are never faded out early.
+
 ## [1.4.0] - 2026-10-23
 
 ### Added
@@ -70,7 +84,8 @@ First release on GitHub Pages: the game known internally as "v4", moved from `co
 - Test hook `window.__bb`.
 - `archive/` prototypes v1–v3, `docs/` specs and build contracts, `knowledge/` project notes.
 
-[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/vovanduc/tiny-chalk-people/compare/v1.1.1...v1.2.0

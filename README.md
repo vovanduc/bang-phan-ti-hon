@@ -20,6 +20,8 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 | Tap a star | It bursts into sparkles and drops seeds. |
 | Tap a bubble | It pops and drops a ladder, mushroom (trampoline), fire, cow, crocodile, monkey, bear, berry or star. |
 | Tap a parachute | Every 2–3 minutes a plane flies over and drops 5–10 gift boxes on parachutes, each wrapped in a bubble. Tap one and the gift falls out: berries, seeds, a mushroom, a ladder or a star. Untapped boxes float down and wait on the ground until someone walks into them. Tap the plane for an extra box. |
+| Tap Santa's sleigh | Santa says "ho ho ho" and drops an extra present. Tap a gift wagon and it drops one of its presents; tap the reindeer and Rudolph's nose flashes. |
+| Tap a firework box | It lights and fires a long show of fireworks: round bursts, rings, hearts, stars, smiley faces, golden willows. Tap it again while it fires for one more rocket. |
 | Tap an animal | Crocodile rolls over giggling, monkey does a backflip, bear hugs the nearest person. |
 
 ## What else happens
@@ -30,6 +32,10 @@ Designed for toddlers: big touch targets, no reading required, no losing, no sca
 **Mushrooms** hop around by themselves and bounce anyone standing next to them when they land.
 
 **Plane**: the first one comes after about a minute, then every 2–3 minutes. Gift boxes that land on the ground open when a person or animal walks into them, or by themselves after 45 s.
+
+**Santa**: about two minutes in, and then every 4–6 minutes, Santa flies across below the clouds in his sleigh, pulled by four reindeer led by red-nosed Rudolph, with 5–10 gift wagons behind. Each wagon drops 3–5 presents wrapped in bubbles; inside can be anything a bubble holds, and every trip brings at least one firework box. Presents that land wait on the ground until someone walks into them.
+
+**Fireworks** burst below the clouds with realistic launch, boom and crackle sounds. Nearby people react: some stop, face the show and raise their arms; others get scared by the noise and run around. In daytime the bursts leave drifting smoke; at night they glow, flash and glitter, and wake up sleepers nearby.
 
 **Day and night** also change by themselves: night falls after about 2.5 minutes of play and morning returns about 90 seconds later.
 
@@ -50,6 +56,7 @@ Full notes: [CHANGELOG.md](CHANGELOG.md) · downloads: [GitHub releases](https:/
 
 | Version | Date | Highlights |
 |---|---|---|
+| [1.5.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.5.0) | 2026-10-24 | Santa's sleigh with reindeer and gift wagons; firework shows with real-sounding booms; people watch or run from the noise |
 | [1.4.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.4.0) | 2026-10-23 | Plane drops parachute gift boxes; bigger, longer fires that rain puts out and that spread to many people; hopping mushrooms; corner link removed so toddlers don't leave the game |
 | [1.3.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.3.0) | 2026-10-14 | Day and night: moon, fireflies, crickets, people and bear go to sleep |
 | [1.2.0](https://github.com/vovanduc/tiny-chalk-people/releases/tag/v1.2.0) | 2026-10-13 | Rainbow bridge, puddles and ponds, flowers, butterflies |
@@ -70,6 +77,7 @@ Full notes: [CHANGELOG.md](CHANGELOG.md) · downloads: [GitHub releases](https:/
 | `nature.js` | Rainbow, puddles, flowers, butterflies |
 | `night.js` | Day and night, moon, fireflies, sleeping |
 | `plane.js` | Plane and parachute gift boxes |
+| `santa.js` | Santa's sleigh and gift wagons, fireworks |
 | `sound.js` | All sounds, synthesized with Web Audio (no audio files) |
 | `archive/` | Early prototypes v1–v3 |
 | `docs/` | Analysis of the original artwork, specs, build contracts |

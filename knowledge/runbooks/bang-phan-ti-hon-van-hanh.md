@@ -18,7 +18,7 @@ Thư mục: root repo (`index.html` + `*.js`). Cơ chế chi tiết: [knowledge/
 
 ## 2. Kiến trúc
 Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong index.html:
-`pixi.min.js (CDN) → core.js → people.js → sky.js → ground.js → things.js → animals.js → nature.js → night.js → plane.js → sound.js → <script>boot()</script>`.
+`pixi.min.js (CDN) → core.js → people.js → sky.js → ground.js → things.js → animals.js → nature.js → night.js → plane.js → santa.js → sound.js → <script>boot()</script>`.
 
 | File | Sở hữu |
 |---|---|
@@ -31,15 +31,16 @@ Classic `<script>` chung global scope, KHÔNG module. Thứ tự nạp trong ind
 | `animals.js` | `ANIMALS` (croc/monkey/bear: `init/update/draw/tap`), helper `ani_*` |
 | `nature.js` | `makeRainbow`, vũng nước (`puddleRain/updatePuddles/drawPuddles/puddleAt`), hoa (`cloverRain`), `Butterfly/updateButterflies`; helper `nat_*` |
 | `night.js` | `makeNight` (ngày/đêm, trăng, ngủ), `Firefly`; hằng số `ngt_*` |
-| `plane.js` | `makePlane`, `Crate`, `CRATE_GIFTS`, `planeTap`/`planeSwipe` (core gọi trong `tapAt`/`onMove`); helper `pln_*` |
+| `plane.js` | `makePlane`, `Crate` (tham số `gift`, `wrap` cho hộp quà Noel), `CRATE_GIFTS`, `planeTap`/`planeSwipe` (core gọi trong `tapAt`/`onMove`); helper `pln_*` |
+| `santa.js` | `makeSanta` (đoàn xe + cập nhật/vẽ pháo bông), `santaTap`, Item pháo bông `fwInit/fwUpdate/fwLight/fwDraw` (things.js gọi); helper `sta_*`, `fw_*` |
 | `sound.js` | `SND`, `SFX`, `sfx`, `soundUnlock`, `soundUpdate`, `soundToggle` (+ helper `snd_*`) — tiếng tổng hợp; core gọi `soundUnlock()` ở pointerdown và `soundUpdate(dt)` cuối `tick()`; các slice gọi `sfx(name, x)` tại sự kiện |
 
 Luật: file entity chỉ **khai báo** (không chạy gì lúc nạp, không đụng `PIXI.*`/layer ở top-level); top-level chỉ đúng các tên liệt kê (helper khác → `static` hoặc prefix `<slice>_`); trùng `const/let/class` giữa file = SyntaxError cả trang.
 
-Hợp đồng field giữa slice (người khác đọc/ghi): `Person.{x,y,state,rider,carrier,busy,eat,poke(),burn,soot,panic,ignite(p,spreads),sleep,yawnT}`, `Item.{type,x,y,state,k,squash,h,dir,air,taken,dead,fs,hp}` (`fs/hp`: cỡ và máu của lửa) (+ thú: `mode,modeT,rider,seatY,seatW,hitW,hitH,midY,tap()`), `Seed.{x,y,stage,berries,rain()}`, `Star.{x,y,r,color,k}`, `Cloud.{x,y,w,h,rain,tap()}`, `sun.{x,y,r,on,id,shine(),lit(),update(),render()}`, hàm `burst`, `waterAt`, `trimItems`.
+Hợp đồng field giữa slice (người khác đọc/ghi): `Person.{x,y,state,rider,carrier,busy,eat,poke(),burn,soot,panic,ignite(p,spreads),sleep,yawnT,idleT,nextIdle,surpriseT,scareT,fly()}`, `Item.{type,x,y,state,k,squash,h,dir,air,taken,dead,fs,hp}` (`fs/hp`: cỡ và máu của lửa) (+ thú: `mode,modeT,rider,seatY,seatW,hitW,hitH,midY,tap()`), `Seed.{x,y,stage,berries,rain()}`, `Star.{x,y,r,color,k}`, `Cloud.{x,y,w,h,rain,tap()}`, `sun.{x,y,r,on,id,shine(),lit(),update(),render()}`, hàm `burst`, `waterAt`, `trimItems`.
 
 ## 3. Kiểm thử
-Hook `window.__bb` (core.js): mảng `people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops, puddles, butterflies, fireflies, crates` + `sun`, `rainbow`, `night` (`fall()`, `rise()`, `k`, `phase`), `plane` (`next = 0` → bay ngay; `on`, `drops`, `fly()`), `WW`, `GY`; hàm `step(n)` (bơm n tick, **60 bước = 1 giây**, mỗi step render), `tap(x,y)` (= `tapAt`), `draw(pts)` (pts = [x0,y0,x1,y1,…]), `drop(type,x,y=300)`.
+Hook `window.__bb` (core.js): mảng `people, items, seeds, clovers, stars, clouds, bubbles, lines, birds, fx, drops, puddles, butterflies, fireflies, crates` + `sun`, `rainbow`, `night` (`fall()`, `rise()`, `k`, `phase`), `plane` (`next = 0` → bay ngay; `on`, `drops`, `fly()`), `santa` (`next = 0` → bay ngay; `cars`, `at(off)`, `parts`, `rockets`, `end()`); `drop('firework', x, y)` thả dàn pháo, `WW`, `GY`; hàm `step(n)` (bơm n tick, **60 bước = 1 giây**, mỗi step render), `tap(x,y)` (= `tapAt`), `draw(pts)` (pts = [x0,y0,x1,y1,…]), `drop(type,x,y=300)`.
 
 Tab ẩn → rAF dừng → **luôn bơm tick bằng `__bb.step(n)`**, đừng chờ rAF.
 

@@ -17,7 +17,7 @@ timestamp: 2026-09-28T00:00:00Z
 Input: `pointerdown` → `tapAt(x,y)` (core.js). Chạm trúng vật → hành động tương ứng; chạm chỗ trống → bắt đầu vẽ nét. **Chạm mà không kéo thì không vẽ** (nét < 4 điểm bị xóa khi thả tay).
 
 Thứ tự ưu tiên trong `tapAt` — chạm trúng vật nào trước thì ăn, dừng ngay:
-`bong bóng` (bán kính + 10) → `thùng dù / máy bay` (`planeTap`) → `sao` (trong 26px) → `người` (±16×scale ngang, từ chân lên 64×scale) → `mây` (w/2+8, h/2+8) → `mặt trời` (r+24).
+`bong bóng` (bán kính + 10) → `thùng dù / hộp quà Noel / máy bay` (`planeTap`) → `toa quà / xe trượt / tuần lộc` (`santaTap`) → `sao` (trong 26px) → `người` (±16×scale ngang, từ chân lên 64×scale) → `mây` (w/2+8, h/2+8) → `mặt trời` (r+24).
 
 | # | Thao tác | Xảy ra ngay | Hệ quả kéo theo |
 |---|---|---|---|
@@ -75,7 +75,7 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 ## Bong bóng & đồ vật
 - Số bong bóng `MAXB = clamp(round(WW/450), 2, 5)` (≈4 ở WW=1600); bong bóng vỡ → `bubbleCD` 2–5s; hụt MAXB → `rand(3,6)`s nở cái mới. Trôi chậm vx ±16, vy ±7 + dao động sin.
 - `ITEM_TYPES` trọng số: `ladder ×2, mushroom ×3, fire ×2, cow ×1, croc ×1, monkey ×1, bear ×1, star ×1, berry ×2` → 9 loại (mỗi phần 1/14; v1.1.0–1.3.0: nấm ×2, lửa ×1, phần 1/12). Trước v1.1.0: 6 loại, mỗi phần 1/9.
-- Vỡ: sao → `burst` tại chỗ; loại khác → `new Item` rơi (G_I=1400, VT_I=900), chạm mặt → `live`; hết `LIFE` → mờ 1,2s → chết. Trần `MAX_ITEMS=10` (thừa → cái cũ nhất `fade()`).
+- Vỡ: sao → `burst` tại chỗ; loại khác → `new Item` rơi (G_I=1400, VT_I=900), chạm mặt → `live`; hết `LIFE` → mờ 1,2s → chết. Trần `MAX_ITEMS=16` (v1.5.0, trước 10; thừa → cái cũ nhất `fade()`, trừ pháo bông).
 - Từng vật:
   - **Thang** (`h=300`): rơi nghiêng, đáp đất dựng thẳng; người leo 55px/s, xếp hàng chờ nếu có người trong 44px phía trên; tới đỉnh (`y ≤ L.y−L.h+4`) nhảy ra `vx ±60–150, vy −220…−340` — đưa người lên cao để đáp lên đầu người khác / lên nét / thỉnh thoảng đụng sao thấp. LIFE 45s.
   - **Nấm**: bàn nhún — mũ `y−42k`, nửa rộng `27k`; người đi ngang → bật `vy −1050…−1250`; người rơi trúng mũ → nhún lại `vy −1000…−1200`. `k` lớn 0,4→1 (tốc 2,5/s). LIFE 45s. **Tự nhảy** (v1.4.0, `Item.hop`): mỗi 1,5–3,5s nhún `vy −260…−420`, trôi `vx 20–60` (30% đổi hướng), tiếng `boing`; đáp xuống thì bật người đi bộ trong 30×k px lên `vy −900…−1150`. Đo: 7 lần nhảy / 20s, trôi 124px, tối đa 3 người bay cùng lúc.
@@ -127,6 +127,17 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 - **Quà** `CRATE_GIFTS` trọng số: dâu ×3 (bung **3 quả** `Item('berry')`), hạt ×2 (3 hạt fx `seed` → ụ hạt), nấm ×2, thang ×1, sao ×1 (`burst`). Không có lửa/thú trong thùng.
 - Đo (headless, WW=1600): lượt bay 16s thả 5 thùng; chạm 1 thùng dâu → 3 quả rơi; 4 thùng còn lại chạm đất sau ~14,5s và được người đi ngang mở gần hết ngay; sau 10s không còn thùng.
 
+## Ông già Noel & pháo bông (thêm 2026-10-24, v1.5.0) — `santa.js`
+- **Đoàn xe**: 4 tuần lộc (Rudolph mũi đỏ dẫn đầu, chuông vàng, dây cương đỏ) kéo xe trượt đỏ có ông già Noel vẫy tay + bao quà, phía sau 5–10 toa quà chất hộp (số hộp vẽ trên toa giảm dần khi thả). Cả đoàn lượn sóng nối đuôi, bụi phép lấp lánh sau xe. Lần đầu sau 100–130s, sau đó mỗi 240–360s; đến lượt mà máy bay đang bay thì hoãn 10s. Bay ở y 250–285 — **dưới mây** (đáy mây ≤ ~222), dưới máy bay (y 60–110). 110 px/s, ~24s mỗi lượt ở WW=1600. Tiếng chuông `jingle` mỗi 1,7s, `hoho` mỗi 6–9s.
+- **Quà**: mỗi toa 3–5 món `pick(ITEM_TYPES)` (như bong bóng thường: thang/nấm/lửa/bò/thú/dâu/sao), mỗi đợt **ít nhất 1** (40% là 2) dàn pháo bông. Mỗi toa có sẵn các điểm x để thả. Hộp quà là `Crate` có `wrap` (giấy gói màu + nơ, không dù), bọc bong bóng, rơi 38 px/s; chạm/kéo nét qua → mở; chạm đất → bóng vỡ, hộp nằm chờ người/thú đụng (giống thùng dù). Trần 70 thùng/hộp cùng lúc. Đo: 7 toa, 27 quà, 2 pháo, tối đa 26 hộp cùng lúc.
+- **Chạm**: toa → thả ngay 1 hộp của toa đó; xe trượt → "hô hô hô" + thả thêm 1 quà (tối đa 3/lượt); tuần lộc → mũi Rudolph lóe sáng + chuông. Đêm: mũi Rudolph + đèn xe trượt phát sáng (glow).
+- **Pháo bông** (Item `firework`, chỉ có trong quà Noel — không có trong bong bóng; không bị `trimItems` ép mờ): dàn hộp đỏ 5 ống hình bông hoa, có ngòi. Châm khi bé chạm, người (không leo thang) đụng |dx| < 16, bò/thú đụng, hoặc tự châm sau 40s → ngòi xì 1,3s → bắn 28–40 quả, mỗi 0,16–0,42s, kết bằng 8 quả cùng lúc → mờ sau 3s. Đang bắn mà chạm → bắn thêm 1 quả. Đo: 36–45 quả mỗi dàn.
+- **Quả pháo**: bay từ ống với vận tốc tính sẵn để đỉnh rơi đúng độ cao nổ y 270–470 (dưới mây), vệt đuôi. Kiểu nổ: hoa tròn (peony ×2), vòng, **trái tim**, **ngôi sao**, **mặt cười**, liễu vàng rủ (willow), tách chùm (crossette), hai lớp màu. Trần `fw_MAXP = 2600` tia (đo cao nhất ~870).
+- **Ngày vs đêm**: ngày — tia nét phấn màu, mỗi lần nổ để lại 7 cụm khói trắng mờ trôi 2,5–4s. Đêm (`night.k > 0.5`) — tia có quầng sáng, thêm 15% tia và sống lâu hơn, chớp sáng glow cả vùng 0,6s, kim tuyến nhấp nháy cuối đời tia, tiếng lách tách mỗi lần nổ; người đang ngủ trong 450px bị đánh thức.
+- **Tiếng**: `fwLaunch` (bụp rời ống, 35% kèm tiếng huýt bay lên), `fwBoom` (tiếng đét + thân nổ trầm lowpass + sub 85→32Hz + reverb, tới trễ 0,05–0,15s như ở xa, to hơn với liễu/hai lớp), `fwCrackle` (36 tiếng lách tách), `fuse`. **Tiếng nổ có attack gắt để nghe như thật — trái luật "không âm thanh giật mình" trong CLAUDE.md; chủ dự án yêu cầu rõ (2026-10-24). Âm lượng vẫn qua compressor master.** Chưa nghe thử bằng tai.
+- **Người phản ứng** (`fw_react`, trong 450px): lúc châm ngòi thì giơ tay ngó; lần nổ đầu chia vai mỗi người theo từng dàn pháo — ngày 55% / đêm 45% **đứng ngắm** (đứng yên, quay mặt về chỗ nổ, giơ tay miệng "ồ" mỗi lần nổ, 4%/lần nhảy cẫng), còn lại **sợ ồn chạy tán loạn** (`Person.scareT` 2,5–4s, gia hạn mỗi lần nổ: chạy ×2,4, giơ tay, đổi hướng ngẫu nhiên 1,2 lần/s, không ngó nghiêng/ăn/trèo). Người cháy, đang bay, leo thang bỏ qua. Đo 1 dàn: ngày 8–9 người ngắm, 6–7 chạy; đêm 10–15 ngắm, 11–12 chạy.
+- Hiệu năng (Chromium headless swiftshader, 1 dàn đang bắn): tick+render trung vị 2ms, p95 3,4–4,5ms. Môi trường này có frame treo vài giây định kỳ **cả ở bản v1.4.0 khi không có sự kiện gì** (cùng số frame) → do môi trường đo, không phải do slice này.
+
 ## Chim
 - Đàn **7 chim** giấy (4 hồng `0xffa6d2`, 3 trắng) bám quanh tâm đàn `flock` (điểm đến ngẫu nhiên, tốc 95 px/s; mỗi chim lắc sin quanh chỗ mình trong đàn, tốc tối đa 150).
 - Lần đầu sau 6–10s, các lần sau 8–15s (không có nét phù hợp thì thử lại sau 3s): chọn **1 nét đã vẽ xong** (`!drawing`, `!fading`, ≥ 8 điểm, tuổi < 52s) → cả đàn đáp dàn trải ±7 điểm quanh một điểm ngẫu nhiên của nét.
@@ -174,6 +185,8 @@ Phản ứng với vật (kiểm mỗi frame trong `look()`/`touch()`):
 | Người xoay trong nắng | `spin` — 6 nốt nhanh (「くるくる」) |
 | Chim đậu/cất cánh | `chirp` |
 | Máy bay ù / dù bung / mở thùng quà | `plane` / `chute` / `gift` |
+| Chuông xe trượt / ông già Noel | `jingle` / `hoho` |
+| Ngòi pháo / pháo bay lên / nổ / lách tách | `fuse` / `fwLaunch` / `fwBoom` / `fwCrackle` |
 | Vẽ nét | `chalk` — cộng mức phấn, tiếng do lớp liên tục |
 | Liên tục | Mưa rơi (theo số giọt), lửa cháy (theo số đám lửa + người đang cháy, tối đa 3), phấn cào bảng |
 | Nhạc nền | Hộp nhạc tự sinh: nốt ngũ cung C ngẫu nhiên mỗi 0,6–1,8s, rất nhẹ (bgmBus 0,22) |
@@ -213,7 +226,7 @@ Kiểm (Chromium headless — không nghe được): 19/19 công thức render `
 | Người | `MAXP = clamp(round(WW/48), 14, 44)`; khởi đầu ~60% MAXP; thêm 1,6s/con |
 | Sao | min 7, max 16; khởi đầu 9; thiếu → +1/3s |
 | Bong bóng | `MAXB = clamp(round(WW/450), 2, 5)`; hồi 2–5s (vỡ) / 3–6s (spawn) |
-| Đồ vật | `MAX_ITEMS=10`, `LIFE` 10–45s tùy loại |
+| Đồ vật | `MAX_ITEMS=16`, `LIFE` 10–45s tùy loại |
 | Hạt/ụ dâu | `MAX_SEEDS=14`; hạt chết sau 90s không tưới, cây 150s |
 | Cỏ | `MAX_CLOVERS=160`, sống ~140s |
 | Nét | `MAX_LINES=24`, sống 60s + mờ 2,5s |

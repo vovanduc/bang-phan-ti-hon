@@ -60,10 +60,10 @@ function pln_draw(g, t) {
 }
 
 class Crate {
-  constructor(x, y, dir) {
-    this.x = x; this.y = y; this.vx = dir * 20; this.vy = 30; this.drift = dir * rand(4, 14);
+  constructor(x, y, dir, gift = pick(CRATE_GIFTS), wrap = 0) {   // wrap ≠ 0: hộp quà ông già Noel (giấy gói màu wrap, không dù)
+    this.x = x; this.y = y; this.vx = dir * 20; this.vy = 30; this.drift = dir * rand(4, 14); this.wrap = wrap;
     this.state = 'chute';                                // chute: treo dù trong bong bóng · ground: nằm trên mặt · fall: rơi tự do
-    this.gift = pick(CRATE_GIFTS); this.t = rand(0, 6); this.age = 0; this.chuteA = 1; this.dead = false; this.redrawIn = 0;
+    this.gift = gift; this.t = rand(0, 6); this.age = 0; this.chuteA = 1; this.dead = false; this.redrawIn = 0;
     this.c = put(new PIXI.Container(), itemLayer);
     this.g = put(new PIXI.Graphics(), this.c);
     this.icon = put(new PIXI.Graphics(), this.c);
@@ -71,7 +71,7 @@ class Crate {
   }
   get cy() { return this.y - pln_BOX; }
   hit(x, y) {
-    if (this.state === 'chute') return Math.hypot(x - this.x, y - this.cy) < pln_BR + 12 || (Math.abs(x - this.x) < 40 && y > this.y - 100 && y < this.cy);
+    if (this.state === 'chute') return Math.hypot(x - this.x, y - this.cy) < pln_BR + 12 || (!this.wrap && Math.abs(x - this.x) < 40 && y > this.y - 100 && y < this.cy);
     return Math.abs(x - this.x) < 22 && y > this.y - 34 && y < this.y + 8;
   }
   pop() {                                                // bong bóng vỡ (chạm mặt / chạm thùng)
@@ -125,16 +125,20 @@ class Crate {
     const air = this.state === 'chute';
     this.c.position.set(this.x, this.y);
     this.c.rotation = air ? Math.sin(this.t * 1.2) * 0.1 : 0;
-    if ((this.redrawIn -= dt) <= 0) { this.redrawIn = 0.1; pln_crate(this.g, air, this.chuteA, this.t); }
+    if ((this.redrawIn -= dt) <= 0) { this.redrawIn = 0.1; pln_crate(this.g, air, this.chuteA, this.t, this.wrap); }
   }
   destroy() { this.c.destroy({ children: true }); }
 }
 
 // thùng gỗ đáy (0,0); air = còn dù + bong bóng; chuteA = dù xẹp mờ dần sau khi chạm mặt
-function pln_crate(g, air, chuteA, t) {
+function pln_crate(g, air, chuteA, t, wrap) {
   g.clear();
   const cy = -pln_BOX;
-  if (air) {
+  if (wrap) {                                            // hộp quà Noel: giấy gói + nơ, không dù
+    g.roundRect(-13, cy - 13, 26, 26, 3).fill(wrap).stroke(chalk(2.2));
+    g.moveTo(-13, cy - 8).lineTo(13, cy - 8).stroke({ width: 3, color: 0xffe15a });
+    g.ellipse(-6, cy - 16, 6, 4).ellipse(6, cy - 16, 6, 4).fill(0xffe15a).stroke(chalk(1.2));
+  } else if (air) {
     const top = cy - pln_BR - 44;
     g.moveTo(-36, top + 16).bezierCurveTo(-36, top - 14, 36, top - 14, 36, top + 16)
       .quadraticCurveTo(24, top + 9, 12, top + 16).quadraticCurveTo(0, top + 9, -12, top + 16).quadraticCurveTo(-24, top + 9, -36, top + 16)
@@ -144,8 +148,10 @@ function pln_crate(g, air, chuteA, t) {
   } else if (chuteA > 0) {
     g.moveTo(14, -2).quadraticCurveTo(30, -16 + J(1), 46, -2).closePath().fill({ color: 0xff8fc0, alpha: chuteA });   // dù xẹp bên cạnh
   }
-  g.roundRect(-13, cy - 13, 26, 26, 3).fill(0xd9a066).stroke(chalk(2.2));                // thùng
-  g.moveTo(-13, cy).lineTo(-7, cy).moveTo(7, cy).lineTo(13, cy).stroke(chalk(1.4, 0.7));  // nẹp thùng chừa chỗ icon
+  if (!wrap) {
+    g.roundRect(-13, cy - 13, 26, 26, 3).fill(0xd9a066).stroke(chalk(2.2));              // thùng
+    g.moveTo(-13, cy).lineTo(-7, cy).moveTo(7, cy).lineTo(13, cy).stroke(chalk(1.4, 0.7));   // nẹp thùng chừa chỗ icon
+  }
   if (air) {
     const r = pln_BR;
     g.circle(0, cy, r).fill({ color: CH, alpha: 0.07 }).stroke(chalk(2.2, 0.85));
