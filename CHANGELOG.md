@@ -6,6 +6,9 @@ The names v1–v3 in `archive/` and "v4" in `docs/` are internal prototype names
 
 ## [Unreleased]
 
+### Changed
+- Firework shows last about 30 s: 95–110 rockets plus the finale (was 28–40 rockets, about 10 s).
+
 ## [1.5.0] - 2026-10-24
 
 ### Added

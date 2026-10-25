@@ -1,6 +1,6 @@
 /* Bảng phấn tí hon — SANTA: ông già Noel ngồi xe trượt, 4 tuần lộc kéo (Rudolph mũi đỏ dẫn đầu), kéo theo 5–10 toa quà.
  * Bay ngang dưới tầm mây; mỗi toa thả 3–5 hộp quà bọc bong bóng (đồ vật ngẫu nhiên như bong bóng thường), mỗi đợt có ít nhất 1 dàn pháo bông.
- * Pháo bông (Item 'firework'): bé chạm, hoặc người/thú đụng → châm ngòi → bắn 28–40 quả + màn kết, nổ dưới tầm mây.
+ * Pháo bông (Item 'firework'): bé chạm, hoặc người/thú đụng → châm ngòi → bắn 95–110 quả + màn kết, nổ dưới tầm mây.
  * Ngày: nét phấn màu + khói; đêm: tia có quầng sáng, chớp sáng, kim tuyến lấp lánh, đánh thức người đang ngủ.
  * Người đứng gần: ~55% đứng ngắm (quay mặt về pháo, giơ tay "ồ"), còn lại sợ ồn chạy tán loạn (Person.scareT).
  * Top-level: makeSanta, santaTap, fwInit, fwUpdate, fwLight, fwDraw + helper/hằng số sta_*, fw_*. Chỉ khai báo — PIXI/layer chỉ đụng sau boot().
@@ -184,7 +184,7 @@ function fwUpdate(it, dt) {
     if (it.age > 40) fwLight(it);                                   // không ai đụng thì tự châm
   } else if (it.mode === 'fuse') {
     if (Math.random() < 30 * dt) fx.push({ type: 'ember', x: it.x + 8 + rand(-3, 3), y: it.y - 34, vy: -rand(20, 60), t: 0, life: rand(0.2, 0.5) });
-    if ((it.modeT -= dt) <= 0) { it.mode = 'fire'; it.shots = 28 + ((Math.random() * 13) | 0); it.shotT = 0; }
+    if ((it.modeT -= dt) <= 0) { it.mode = 'fire'; it.shots = 95 + ((Math.random() * 16) | 0); it.shotT = 0; }
   } else if (it.mode === 'fire') {
     if ((it.shotT -= dt) <= 0) {
       fw_launch(it); it.shotT = rand(0.16, 0.42);
